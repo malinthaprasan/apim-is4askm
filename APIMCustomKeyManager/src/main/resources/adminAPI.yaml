@@ -1,0 +1,2205 @@
+swagger: '2.0'
+info:
+  version: v1
+  title: IdentityExpress Management API
+securityDefinitions:
+  OAuth2:
+    type: oauth2
+    flow: accessCode
+    authorizationUrl: https://localhost:5001/connect/authorize
+    tokenUrl: https://localhost:5001/connect/token
+paths:
+  /auditedEvents:
+    get:
+      security:
+        - OAuth2: []
+      tags:
+        - Audit
+      operationId: AuditedEventsGet
+      consumes: []
+      produces: []
+      parameters:
+        - name: From
+          in: query
+          required: false
+          type: string
+        - name: To
+          in: query
+          required: false
+          type: string
+        - name: Page
+          in: query
+          required: false
+          type: integer
+          format: int32
+        - name: PageSize
+          in: query
+          required: false
+          type: integer
+          format: int32
+        - name: Sort
+          in: query
+          required: false
+          type: string
+        - name: Subject
+          in: query
+          required: false
+          type: string
+        - name: Source
+          in: query
+          required: false
+          type: string
+        - name: AuditAction
+          in: query
+          required: false
+          type: string
+        - name: Resource
+          in: query
+          required: false
+          type: string
+        - name: ResourceType
+          in: query
+          required: false
+          type: string
+        - name: Success
+          in: query
+          required: false
+          type: boolean
+      responses:
+        '200':
+          description: Success
+    post:
+      security:
+        - OAuth2: []
+      tags:
+        - Audit
+      operationId: AuditedEventsPost
+      consumes: []
+      produces: []
+      parameters:
+        - name: From
+          in: query
+          required: false
+          type: string
+        - name: To
+          in: query
+          required: false
+          type: string
+        - name: Page
+          in: query
+          required: false
+          type: integer
+          format: int32
+        - name: PageSize
+          in: query
+          required: false
+          type: integer
+          format: int32
+        - name: Sort
+          in: query
+          required: false
+          type: string
+        - name: Subject
+          in: query
+          required: false
+          type: string
+        - name: Source
+          in: query
+          required: false
+          type: string
+        - name: AuditAction
+          in: query
+          required: false
+          type: string
+        - name: Resource
+          in: query
+          required: false
+          type: string
+        - name: ResourceType
+          in: query
+          required: false
+          type: string
+        - name: Success
+          in: query
+          required: false
+          type: boolean
+      responses:
+        '200':
+          description: Success
+  '/users/{userId}/auditedEvents':
+    get:
+      security:
+        - OAuth2: []
+      tags:
+        - Audit
+      operationId: UsersByUserIdAuditedEventsGet
+      consumes: []
+      produces: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          type: string
+        - name: From
+          in: query
+          required: false
+          type: string
+        - name: To
+          in: query
+          required: false
+          type: string
+        - name: Page
+          in: query
+          required: false
+          type: integer
+          format: int32
+        - name: PageSize
+          in: query
+          required: false
+          type: integer
+          format: int32
+        - name: Sort
+          in: query
+          required: false
+          type: string
+        - name: Subject
+          in: query
+          required: false
+          type: string
+        - name: Source
+          in: query
+          required: false
+          type: string
+        - name: AuditAction
+          in: query
+          required: false
+          type: string
+        - name: Resource
+          in: query
+          required: false
+          type: string
+        - name: ResourceType
+          in: query
+          required: false
+          type: string
+        - name: Success
+          in: query
+          required: false
+          type: boolean
+      responses:
+        '200':
+          description: Success
+    post:
+      security:
+        - OAuth2: []
+      tags:
+        - Audit
+      operationId: UsersByUserIdAuditedEventsPost
+      consumes: []
+      produces: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          type: string
+        - name: From
+          in: query
+          required: false
+          type: string
+        - name: To
+          in: query
+          required: false
+          type: string
+        - name: Page
+          in: query
+          required: false
+          type: integer
+          format: int32
+        - name: PageSize
+          in: query
+          required: false
+          type: integer
+          format: int32
+        - name: Sort
+          in: query
+          required: false
+          type: string
+        - name: Subject
+          in: query
+          required: false
+          type: string
+        - name: Source
+          in: query
+          required: false
+          type: string
+        - name: AuditAction
+          in: query
+          required: false
+          type: string
+        - name: Resource
+          in: query
+          required: false
+          type: string
+        - name: ResourceType
+          in: query
+          required: false
+          type: string
+        - name: Success
+          in: query
+          required: false
+          type: boolean
+      responses:
+        '200':
+          description: Success
+  '/clients/{clientId}/auditedEvents':
+    get:
+      security:
+        - OAuth2: []
+      tags:
+        - Audit
+      operationId: ClientsByClientIdAuditedEventsGet
+      consumes: []
+      produces: []
+      parameters:
+        - name: clientId
+          in: path
+          required: true
+          type: string
+        - name: From
+          in: query
+          required: false
+          type: string
+        - name: To
+          in: query
+          required: false
+          type: string
+        - name: Page
+          in: query
+          required: false
+          type: integer
+          format: int32
+        - name: PageSize
+          in: query
+          required: false
+          type: integer
+          format: int32
+        - name: Sort
+          in: query
+          required: false
+          type: string
+        - name: Subject
+          in: query
+          required: false
+          type: string
+        - name: Source
+          in: query
+          required: false
+          type: string
+        - name: AuditAction
+          in: query
+          required: false
+          type: string
+        - name: Resource
+          in: query
+          required: false
+          type: string
+        - name: ResourceType
+          in: query
+          required: false
+          type: string
+        - name: Success
+          in: query
+          required: false
+          type: boolean
+      responses:
+        '200':
+          description: Success
+    post:
+      security:
+        - OAuth2: []
+      tags:
+        - Audit
+      operationId: ClientsByClientIdAuditedEventsPost
+      consumes: []
+      produces: []
+      parameters:
+        - name: clientId
+          in: path
+          required: true
+          type: string
+        - name: From
+          in: query
+          required: false
+          type: string
+        - name: To
+          in: query
+          required: false
+          type: string
+        - name: Page
+          in: query
+          required: false
+          type: integer
+          format: int32
+        - name: PageSize
+          in: query
+          required: false
+          type: integer
+          format: int32
+        - name: Sort
+          in: query
+          required: false
+          type: string
+        - name: Subject
+          in: query
+          required: false
+          type: string
+        - name: Source
+          in: query
+          required: false
+          type: string
+        - name: AuditAction
+          in: query
+          required: false
+          type: string
+        - name: Resource
+          in: query
+          required: false
+          type: string
+        - name: ResourceType
+          in: query
+          required: false
+          type: string
+        - name: Success
+          in: query
+          required: false
+          type: boolean
+      responses:
+        '200':
+          description: Success
+  /ClaimTypes:
+    get:
+      security:
+        - OAuth2: []
+      tags:
+        - ClaimTypes
+      operationId: ClaimTypesGet
+      consumes: []
+      produces: []
+      parameters:
+        - name: name
+          in: query
+          required: false
+          type: string
+        - name: sort
+          in: query
+          required: false
+          type: string
+      responses:
+        '200':
+          description: Success
+    post:
+      security:
+        - OAuth2: []
+      tags:
+        - ClaimTypes
+      operationId: ClaimTypesPost
+      consumes:
+        - application/json-patch+json
+        - application/json
+        - text/json
+        - application/*+json
+      produces: []
+      parameters:
+        - name: claimType
+          in: body
+          required: false
+          schema:
+            $ref: '#/definitions/CreateClaimTypeDto'
+      responses:
+        '200':
+          description: Success
+  '/ClaimTypes/{id}':
+    get:
+      security:
+        - OAuth2: []
+      tags:
+        - ClaimTypes
+      operationId: ClaimTypesByIdGet
+      consumes: []
+      produces: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Success
+    put:
+      security:
+        - OAuth2: []
+      tags:
+        - ClaimTypes
+      operationId: ClaimTypesByIdPut
+      consumes:
+        - application/json-patch+json
+        - application/json
+        - text/json
+        - application/*+json
+      produces: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: string
+        - name: claimType
+          in: body
+          required: false
+          schema:
+            $ref: '#/definitions/ClaimTypeDto'
+      responses:
+        '200':
+          description: Success
+    delete:
+      security:
+        - OAuth2: []
+      tags:
+        - ClaimTypes
+      operationId: ClaimTypesByIdDelete
+      consumes: []
+      produces: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Success
+  /Clients:
+    get:
+      security:
+        - OAuth2: []
+      tags:
+        - Clients
+      operationId: ClientsGet
+      consumes: []
+      produces: []
+      parameters:
+        - name: name
+          in: query
+          required: false
+          type: string
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: "#/definitions/ClientDtoRet"
+    post:
+      security:
+        - OAuth2: []
+      tags:
+        - Clients
+      operationId: ClientsPost
+      consumes:
+        - application/json-patch+json
+        - application/json
+        - text/json
+        - application/*+json
+      produces: []
+      parameters:
+        - name: client
+          in: body
+          required: false
+          schema:
+            $ref: '#/definitions/CreateClientDto'
+      responses:
+        '200':
+          description: Success
+  '/Clients/{id}':
+    get:
+      security:
+        - OAuth2: []
+      tags:
+        - Clients
+      operationId: ClientsByIdGet
+      consumes: []
+      produces: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Success
+          schema:
+            $ref: "#/definitions/ClientDto"
+    put:
+      security:
+        - OAuth2: []
+      tags:
+        - Clients
+      operationId: ClientsByIdPut
+      consumes:
+        - application/json-patch+json
+        - application/json
+        - text/json
+        - application/*+json
+      produces: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: string
+        - name: client
+          in: body
+          required: false
+          schema:
+            $ref: '#/definitions/ClientDto'
+      responses:
+        '200':
+          description: Success
+    delete:
+      security:
+        - OAuth2: []
+      tags:
+        - Clients
+      operationId: ClientsByIdDelete
+      consumes: []
+      produces: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Success
+  '/Clients/{id}/secrets':
+    post:
+      security:
+        - OAuth2: []
+      tags:
+        - Clients
+      operationId: ClientsByIdSecretsPost
+      consumes:
+        - application/json-patch+json
+        - application/json
+        - text/json
+        - application/*+json
+      produces: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: string
+        - name: secret
+          in: body
+          required: false
+          schema:
+            $ref: '#/definitions/CreateSecretDto'
+      responses:
+        '200':
+          description: Success
+  '/Clients/{id}/secrets/{secretId}':
+    put:
+      security:
+        - OAuth2: []
+      tags:
+        - Clients
+      operationId: ClientsByIdSecretsBySecretIdPut
+      consumes:
+        - application/json-patch+json
+        - application/json
+        - text/json
+        - application/*+json
+      produces: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: string
+        - name: secretId
+          in: path
+          required: true
+          type: integer
+          format: int32
+        - name: secret
+          in: body
+          required: false
+          schema:
+            $ref: '#/definitions/SecretDto'
+      responses:
+        '200':
+          description: Success
+    delete:
+      security:
+        - OAuth2: []
+      tags:
+        - Clients
+      operationId: ClientsByIdSecretsBySecretIdDelete
+      consumes: []
+      produces: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: string
+        - name: secretId
+          in: path
+          required: true
+          type: integer
+          format: int32
+      responses:
+        '200':
+          description: Success
+  /IdentityResources:
+    get:
+      security:
+        - OAuth2: []
+      tags:
+        - IdentityResources
+      operationId: IdentityResourcesGet
+      consumes: []
+      produces: []
+      parameters:
+        - name: name
+          in: query
+          required: false
+          type: string
+      responses:
+        '200':
+          description: Success
+    post:
+      security:
+        - OAuth2: []
+      tags:
+        - IdentityResources
+      operationId: IdentityResourcesPost
+      consumes:
+        - application/json-patch+json
+        - application/json
+        - text/json
+        - application/*+json
+      produces: []
+      parameters:
+        - name: resource
+          in: body
+          required: false
+          schema:
+            $ref: '#/definitions/CreateIdentityResourceDto'
+      responses:
+        '200':
+          description: Success
+  '/IdentityResources/{id}':
+    get:
+      security:
+        - OAuth2: []
+      tags:
+        - IdentityResources
+      operationId: IdentityResourcesByIdGet
+      consumes: []
+      produces: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Success
+    put:
+      security:
+        - OAuth2: []
+      tags:
+        - IdentityResources
+      operationId: IdentityResourcesByIdPut
+      consumes:
+        - application/json-patch+json
+        - application/json
+        - text/json
+        - application/*+json
+      produces: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: string
+        - name: resource
+          in: body
+          required: false
+          schema:
+            $ref: '#/definitions/IdentityResourceDto'
+      responses:
+        '200':
+          description: Success
+    delete:
+      security:
+        - OAuth2: []
+      tags:
+        - IdentityResources
+      operationId: IdentityResourcesByIdDelete
+      consumes: []
+      produces: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Success
+  /license:
+    get:
+      security:
+        - OAuth2: []
+      tags:
+        - LicenseInfo
+      operationId: LicenseGet
+      consumes: []
+      produces: []
+      parameters: []
+      responses:
+        '200':
+          description: Success
+  /Permission:
+    get:
+      security:
+        - OAuth2: []
+      tags:
+        - Permission
+      operationId: PermissionGet
+      consumes: []
+      produces: []
+      parameters: []
+      responses:
+        '200':
+          description: Success
+  /Permission/avaliable:
+    get:
+      security:
+        - OAuth2: []
+      tags:
+        - Permission
+      operationId: PermissionAvaliableGet
+      consumes: []
+      produces: []
+      parameters: []
+      responses:
+        '200':
+          description: Success
+  /Policy:
+    get:
+      security:
+        - OAuth2: []
+      tags:
+        - Policy
+      operationId: PolicyGet
+      consumes: []
+      produces: []
+      parameters: []
+      responses:
+        '200':
+          description: Success
+    put:
+      security:
+        - OAuth2: []
+      tags:
+        - Policy
+      operationId: PolicyPut
+      consumes:
+        - application/json-patch+json
+        - application/json
+        - text/json
+        - application/*+json
+      produces: []
+      parameters:
+        - name: accessPolicy
+          in: body
+          required: false
+          schema:
+            $ref: '#/definitions/AccessPolicyDefinitionDto'
+      responses:
+        '200':
+          description: Success
+  /ProtectedResources:
+    get:
+      security:
+        - OAuth2: []
+      tags:
+        - ProtectedResources
+      operationId: ProtectedResourcesGet
+      consumes: []
+      produces: []
+      parameters:
+        - name: name
+          in: query
+          required: false
+          type: string
+      responses:
+        '200':
+          description: Success
+    post:
+      security:
+        - OAuth2: []
+      tags:
+        - ProtectedResources
+      operationId: ProtectedResourcesPost
+      consumes:
+        - application/json-patch+json
+        - application/json
+        - text/json
+        - application/*+json
+      produces: []
+      parameters:
+        - name: resource
+          in: body
+          required: false
+          schema:
+            $ref: '#/definitions/CreateProtectedResourceDto'
+      responses:
+        '200':
+          description: Success
+  '/ProtectedResources/{id}':
+    get:
+      security:
+        - OAuth2: []
+      tags:
+        - ProtectedResources
+      operationId: ProtectedResourcesByIdGet
+      consumes: []
+      produces: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Success
+    put:
+      security:
+        - OAuth2: []
+      tags:
+        - ProtectedResources
+      operationId: ProtectedResourcesByIdPut
+      consumes:
+        - application/json-patch+json
+        - application/json
+        - text/json
+        - application/*+json
+      produces: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: string
+        - name: resource
+          in: body
+          required: false
+          schema:
+            $ref: '#/definitions/ProtectedResourceDto'
+      responses:
+        '200':
+          description: Success
+    delete:
+      security:
+        - OAuth2: []
+      tags:
+        - ProtectedResources
+      operationId: ProtectedResourcesByIdDelete
+      consumes: []
+      produces: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Success
+  '/ProtectedResources/{id}/secrets':
+    post:
+      security:
+        - OAuth2: []
+      tags:
+        - ProtectedResources
+      operationId: ProtectedResourcesByIdSecretsPost
+      consumes:
+        - application/json-patch+json
+        - application/json
+        - text/json
+        - application/*+json
+      produces: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: string
+        - name: secret
+          in: body
+          required: false
+          schema:
+            $ref: '#/definitions/CreateSecretDto'
+      responses:
+        '200':
+          description: Success
+  '/ProtectedResources/{id}/secrets/{secretId}':
+    put:
+      security:
+        - OAuth2: []
+      tags:
+        - ProtectedResources
+      operationId: ProtectedResourcesByIdSecretsBySecretIdPut
+      consumes:
+        - application/json-patch+json
+        - application/json
+        - text/json
+        - application/*+json
+      produces: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: string
+        - name: secretId
+          in: path
+          required: true
+          type: integer
+          format: int32
+        - name: secret
+          in: body
+          required: false
+          schema:
+            $ref: '#/definitions/SecretDto'
+      responses:
+        '200':
+          description: Success
+    delete:
+      security:
+        - OAuth2: []
+      tags:
+        - ProtectedResources
+      operationId: ProtectedResourcesByIdSecretsBySecretIdDelete
+      consumes: []
+      produces: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: string
+        - name: secretId
+          in: path
+          required: true
+          type: integer
+          format: int32
+      responses:
+        '200':
+          description: Success
+  '/ProtectedResources/{id}/scopes':
+    post:
+      security:
+        - OAuth2: []
+      tags:
+        - ProtectedResources
+      operationId: ProtectedResourcesByIdScopesPost
+      consumes:
+        - application/json-patch+json
+        - application/json
+        - text/json
+        - application/*+json
+      produces: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: string
+        - name: scope
+          in: body
+          required: false
+          schema:
+            $ref: '#/definitions/ScopeDto'
+      responses:
+        '200':
+          description: Success
+  '/ProtectedResources/{id}/scopes/{scopeId}':
+    put:
+      security:
+        - OAuth2: []
+      tags:
+        - ProtectedResources
+      operationId: ProtectedResourcesByIdScopesByScopeIdPut
+      consumes:
+        - application/json-patch+json
+        - application/json
+        - text/json
+        - application/*+json
+      produces: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: string
+        - name: scopeId
+          in: path
+          required: true
+          type: integer
+          format: int32
+        - name: scope
+          in: body
+          required: false
+          schema:
+            $ref: '#/definitions/ScopeDto'
+      responses:
+        '200':
+          description: Success
+    delete:
+      security:
+        - OAuth2: []
+      tags:
+        - ProtectedResources
+      operationId: ProtectedResourcesByIdScopesByScopeIdDelete
+      consumes: []
+      produces: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: string
+        - name: scopeId
+          in: path
+          required: true
+          type: integer
+          format: int32
+      responses:
+        '200':
+          description: Success
+  /Roles:
+    get:
+      security:
+        - OAuth2: []
+      tags:
+        - Roles
+      operationId: RolesGet
+      consumes: []
+      produces: []
+      parameters:
+        - name: name
+          in: query
+          required: false
+          type: string
+        - name: sort
+          in: query
+          required: false
+          type: string
+        - name: fields
+          in: query
+          required: false
+          type: string
+      responses:
+        '200':
+          description: Success
+    post:
+      security:
+        - OAuth2: []
+      tags:
+        - Roles
+      operationId: RolesPost
+      consumes:
+        - application/json-patch+json
+        - application/json
+        - text/json
+        - application/*+json
+      produces: []
+      parameters:
+        - name: role
+          in: body
+          required: false
+          schema:
+            $ref: '#/definitions/CreateRoleDto'
+      responses:
+        '200':
+          description: Success
+  '/Roles/{id}':
+    get:
+      security:
+        - OAuth2: []
+      tags:
+        - Roles
+      operationId: RolesByIdGet
+      consumes: []
+      produces: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Success
+    put:
+      security:
+        - OAuth2: []
+      tags:
+        - Roles
+      operationId: RolesByIdPut
+      consumes:
+        - application/json-patch+json
+        - application/json
+        - text/json
+        - application/*+json
+      produces: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: string
+        - name: role
+          in: body
+          required: false
+          schema:
+            $ref: '#/definitions/RoleDto'
+      responses:
+        '200':
+          description: Success
+    delete:
+      security:
+        - OAuth2: []
+      tags:
+        - Roles
+      operationId: RolesByIdDelete
+      consumes: []
+      produces: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Success
+  '/Roles/{id}/users':
+    post:
+      security:
+        - OAuth2: []
+      tags:
+        - Roles
+      operationId: RolesByIdUsersPost
+      consumes:
+        - application/json-patch+json
+        - application/json
+        - text/json
+        - application/*+json
+      produces: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: string
+        - name: users
+          in: body
+          required: false
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/UserDto'
+      responses:
+        '200':
+          description: Success
+    delete:
+      security:
+        - OAuth2: []
+      tags:
+        - Roles
+      operationId: RolesByIdUsersDelete
+      consumes:
+        - application/json-patch+json
+        - application/json
+        - text/json
+        - application/*+json
+      produces: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: string
+        - name: users
+          in: body
+          required: false
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/UserDto'
+      responses:
+        '200':
+          description: Success
+  /System/nop:
+    get:
+      security:
+        - OAuth2: []
+      tags:
+        - System
+      operationId: SystemNopGet
+      consumes: []
+      produces: []
+      parameters: []
+      responses:
+        '200':
+          description: Success
+  /UIConfiguration:
+    get:
+      security:
+        - OAuth2: []
+      tags:
+        - UIConfiguration
+      operationId: UIConfigurationGet
+      consumes: []
+      produces: []
+      parameters: []
+      responses:
+        '200':
+          description: Success
+  /Users:
+    get:
+      security:
+        - OAuth2: []
+      tags:
+        - Users
+      operationId: UsersGet
+      consumes: []
+      produces: []
+      parameters:
+        - name: page
+          in: query
+          required: false
+          type: integer
+          format: int32
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int32
+        - name: sort
+          in: query
+          required: false
+          type: string
+        - name: username
+          in: query
+          required: false
+          type: string
+        - name: email
+          in: query
+          required: false
+          type: string
+        - name: name
+          in: query
+          required: false
+          type: string
+        - name: id
+          in: query
+          required: false
+          type: string
+        - name: state
+          in: query
+          required: false
+          type: string
+        - name: q
+          in: query
+          required: false
+          type: string
+      responses:
+        '200':
+          description: Success
+    post:
+      security:
+        - OAuth2: []
+      tags:
+        - Users
+      operationId: UsersPost
+      consumes:
+        - application/json-patch+json
+        - application/json
+        - text/json
+        - application/*+json
+      produces: []
+      parameters:
+        - name: user
+          in: body
+          required: false
+          schema:
+            $ref: '#/definitions/CreateUserDto'
+      responses:
+        '200':
+          description: Success
+  '/Users/{subject}':
+    get:
+      security:
+        - OAuth2: []
+      tags:
+        - Users
+      operationId: UsersBySubjectGet
+      consumes: []
+      produces: []
+      parameters:
+        - name: subject
+          in: path
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Success
+    put:
+      security:
+        - OAuth2: []
+      tags:
+        - Users
+      operationId: UsersBySubjectPut
+      consumes:
+        - application/json-patch+json
+        - application/json
+        - text/json
+        - application/*+json
+      produces: []
+      parameters:
+        - name: subject
+          in: path
+          required: true
+          type: string
+        - name: user
+          in: body
+          required: false
+          schema:
+            $ref: '#/definitions/UserDto'
+      responses:
+        '200':
+          description: Success
+    delete:
+      security:
+        - OAuth2: []
+      tags:
+        - Users
+      operationId: UsersBySubjectDelete
+      consumes: []
+      produces: []
+      parameters:
+        - name: subject
+          in: path
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Success
+  /Users/lightweight:
+    get:
+      security:
+        - OAuth2: []
+      tags:
+        - Users
+      operationId: UsersLightweightGet
+      consumes: []
+      produces: []
+      parameters:
+        - name: page
+          in: query
+          required: false
+          type: integer
+          format: int32
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int32
+        - name: state
+          in: query
+          required: false
+          type: string
+        - name: q
+          in: query
+          required: false
+          type: string
+      responses:
+        '200':
+          description: Success
+  '/Users/{subject}/roles':
+    post:
+      security:
+        - OAuth2: []
+      tags:
+        - Users
+      operationId: UsersBySubjectRolesPost
+      consumes:
+        - application/json-patch+json
+        - application/json
+        - text/json
+        - application/*+json
+      produces: []
+      parameters:
+        - name: subject
+          in: path
+          required: true
+          type: string
+        - name: roles
+          in: body
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+      responses:
+        '200':
+          description: Success
+    delete:
+      security:
+        - OAuth2: []
+      tags:
+        - Users
+      operationId: UsersBySubjectRolesDelete
+      consumes:
+        - application/json-patch+json
+        - application/json
+        - text/json
+        - application/*+json
+      produces: []
+      parameters:
+        - name: subject
+          in: path
+          required: true
+          type: string
+        - name: roles
+          in: body
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+      responses:
+        '200':
+          description: Success
+  '/Users/{subject}/claims':
+    put:
+      security:
+        - OAuth2: []
+      tags:
+        - Users
+      operationId: UsersBySubjectClaimsPut
+      consumes:
+        - application/json-patch+json
+        - application/json
+        - text/json
+        - application/*+json
+      produces: []
+      parameters:
+        - name: subject
+          in: path
+          required: true
+          type: string
+        - name: dto
+          in: body
+          required: false
+          schema:
+            $ref: '#/definitions/EditClaimDto'
+      responses:
+        '200':
+          description: Success
+    post:
+      security:
+        - OAuth2: []
+      tags:
+        - Users
+      operationId: UsersBySubjectClaimsPost
+      consumes:
+        - application/json-patch+json
+        - application/json
+        - text/json
+        - application/*+json
+      produces: []
+      parameters:
+        - name: subject
+          in: path
+          required: true
+          type: string
+        - name: claim
+          in: body
+          required: false
+          schema:
+            $ref: '#/definitions/ClaimDto'
+      responses:
+        '200':
+          description: Success
+    delete:
+      security:
+        - OAuth2: []
+      tags:
+        - Users
+      operationId: UsersBySubjectClaimsDelete
+      consumes:
+        - application/json-patch+json
+        - application/json
+        - text/json
+        - application/*+json
+      produces: []
+      parameters:
+        - name: subject
+          in: path
+          required: true
+          type: string
+        - name: claim
+          in: body
+          required: false
+          schema:
+            $ref: '#/definitions/ClaimDto'
+      responses:
+        '200':
+          description: Success
+  '/Users/{subject}/apps':
+    get:
+      security:
+        - OAuth2: []
+      tags:
+        - Users
+      operationId: UsersBySubjectAppsGet
+      consumes: []
+      produces: []
+      parameters:
+        - name: subject
+          in: path
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Success
+    delete:
+      security:
+        - OAuth2: []
+      tags:
+        - Users
+      operationId: UsersBySubjectAppsDelete
+      consumes: []
+      produces: []
+      parameters:
+        - name: subject
+          in: path
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Success
+  '/Users/{subject}/apps/{clientId}':
+    delete:
+      security:
+        - OAuth2: []
+      tags:
+        - Users
+      operationId: UsersBySubjectAppsByClientIdDelete
+      consumes: []
+      produces: []
+      parameters:
+        - name: subject
+          in: path
+          required: true
+          type: string
+        - name: clientId
+          in: path
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Success
+  '/Users/{subject}/password/reset':
+    get:
+      security:
+        - OAuth2: []
+      tags:
+        - Users
+      operationId: UsersBySubjectPasswordResetGet
+      consumes: []
+      produces: []
+      parameters:
+        - name: subject
+          in: path
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Success
+  '/Users/{subject}/logins':
+    get:
+      security:
+        - OAuth2: []
+      tags:
+        - Users
+      operationId: UsersBySubjectLoginsGet
+      consumes: []
+      produces: []
+      parameters:
+        - name: subject
+          in: path
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Success
+    delete:
+      security:
+        - OAuth2: []
+      tags:
+        - Users
+      operationId: UsersBySubjectLoginsDelete
+      consumes:
+        - application/json-patch+json
+        - application/json
+        - text/json
+        - application/*+json
+      produces: []
+      parameters:
+        - name: subject
+          in: path
+          required: true
+          type: string
+        - name: userLogin
+          in: body
+          required: false
+          schema:
+            $ref: '#/definitions/UserLoginDto'
+      responses:
+        '200':
+          description: Success
+  '/UserSettings/{subject}':
+    get:
+      security:
+        - OAuth2: []
+      tags:
+        - UserSettings
+      operationId: UserSettingsBySubjectGet
+      consumes: []
+      produces: []
+      parameters:
+        - name: subject
+          in: path
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Success
+  /UserSettings:
+    put:
+      security:
+        - OAuth2: []
+      tags:
+        - UserSettings
+      operationId: UserSettingsPut
+      consumes:
+        - application/json-patch+json
+        - application/json
+        - text/json
+        - application/*+json
+      produces: []
+      parameters:
+        - name: userClaims
+          in: body
+          required: false
+          schema:
+            $ref: '#/definitions/UserClaimDto'
+      responses:
+        '200':
+          description: Success
+definitions:
+  CreateClaimTypeDto:
+    type: object
+    properties:
+      name:
+        type: string
+      description:
+        type: string
+      required:
+        type: boolean
+      valueType:
+        type: string
+      rule:
+        type: string
+      ruleValidationFailureDescription:
+        type: string
+      userEditable:
+        type: boolean
+  ClaimTypeDto:
+    type: object
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+      description:
+        type: string
+      required:
+        type: boolean
+      reserved:
+        type: boolean
+      valueType:
+        type: string
+      rule:
+        type: string
+      ruleValidationFailureDescription:
+        type: string
+      userEditable:
+        type: boolean
+  CreateClientDto:
+    type: object
+    properties:
+      clientType:
+        format: int32
+        enum:
+          - 0
+          - 1
+          - 2
+          - 3
+          - 4
+        type: integer
+      clientId:
+        type: string
+      clientName:
+        type: string
+      clientUri:
+        type: string
+      logoUri:
+        type: string
+      description:
+        type: string
+      requireConsent:
+        type: boolean
+      redirectUris:
+        type: array
+        items:
+          type: string
+      postLogoutRedirectUris:
+        type: array
+        items:
+          type: string
+      allowedScopes:
+        type: array
+        items:
+          type: string
+      allowedCorsOrigins:
+        type: array
+        items:
+          type: string
+      clientSecrets:
+        type: array
+        items:
+          $ref: '#/definitions/CreateSecretDto'
+  CreateSecretDto:
+    type: object
+    properties:
+      type:
+        type: string
+      value:
+        type: string
+      description:
+        type: string
+      expiration:
+        format: date-time
+        type: string
+  ClientDto:
+    type: object
+    properties:
+      id:
+        type: string
+      enabled:
+        type: boolean
+      clientId:
+        type: string
+      description:
+        type: string
+      protocolType:
+        type: string
+      clientSecrets:
+        type: array
+        items:
+          $ref: '#/definitions/SecretDto'
+      requireClientSecret:
+        type: boolean
+      clientName:
+        type: string
+      clientUri:
+        type: string
+      logoUri:
+        type: string
+      requireConsent:
+        type: boolean
+      allowRememberConsent:
+        type: boolean
+      allowedGrantTypes:
+        type: array
+        items:
+          type: string
+      requirePkce:
+        type: boolean
+      allowPlainTextPkce:
+        type: boolean
+      allowAccessTokensViaBrowser:
+        type: boolean
+      redirectUris:
+        type: array
+        items:
+          type: string
+      postLogoutRedirectUris:
+        type: array
+        items:
+          type: string
+      frontChannelLogoutUri:
+        type: string
+      frontChannelLogoutSessionRequired:
+        type: boolean
+      allowOfflineAccess:
+        type: boolean
+      allowedScopes:
+        type: array
+        items:
+          type: string
+      alwaysIncludeUserClaimsInIdToken:
+        type: boolean
+      identityTokenLifetime:
+        format: int32
+        type: integer
+      accessTokenLifetime:
+        format: int32
+        type: integer
+      authorizationCodeLifetime:
+        format: int32
+        type: integer
+      absoluteRefreshTokenLifetime:
+        format: int32
+        type: integer
+      slidingRefreshTokenLifetime:
+        format: int32
+        type: integer
+      refreshTokenUsage:
+        format: int32
+        enum:
+          - 0
+          - 1
+        type: integer
+      updateAccessTokenClaimsOnRefresh:
+        type: boolean
+      refreshTokenExpiration:
+        format: int32
+        enum:
+          - 0
+          - 1
+        type: integer
+      accessTokenType:
+        format: int32
+        enum:
+          - 0
+          - 1
+        type: integer
+      enableLocalLogin:
+        type: boolean
+      identityProviderRestrictions:
+        type: array
+        items:
+          type: string
+      includeJwtId:
+        type: boolean
+      claims:
+        type: array
+        items:
+          $ref: '#/definitions/ClaimDto'
+      alwaysSendClientClaims:
+        type: boolean
+      clientClaimsPrefix:
+        type: string
+      allowedCorsOrigins:
+        type: array
+        items:
+          type: string
+      properties:
+        type: array
+        items:
+          $ref: '#/definitions/PropertyDto'
+      pairWiseSubjectSalt:
+        type: string
+      consentLifetime:
+        format: int32
+        type: integer
+      backChannelLogoutSessionRequired:
+        type: boolean
+      backChannelLogoutUri:
+        type: string
+      userSSOLifetime:
+        format: int32
+        type: integer
+      nonEditable:
+        type: boolean
+      deviceCodeLifetime:
+        format: int32
+        type: integer
+      userCodeType:
+        type: string
+  SecretDto:
+    type: object
+    properties:
+      id:
+        format: int32
+        type: integer
+      type:
+        type: string
+      value:
+        type: string
+      description:
+        type: string
+      expiration:
+        format: date-time
+        type: string
+  ClaimDto:
+    type: object
+    properties:
+      type:
+        type: string
+      value:
+        type: string
+  PropertyDto:
+    type: object
+    properties:
+      key:
+        type: string
+      value:
+        type: string
+  CreateIdentityResourceDto:
+    required:
+      - name
+      - displayName
+    type: object
+    properties:
+      name:
+        type: string
+      displayName:
+        type: string
+      description:
+        type: string
+      allowedClaims:
+        type: array
+        items:
+          type: string
+  IdentityResourceDto:
+    type: object
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+      displayName:
+        type: string
+      description:
+        type: string
+      enabled:
+        type: boolean
+      required:
+        type: boolean
+      emphasize:
+        type: boolean
+      showInDiscoveryDocument:
+        type: boolean
+      allowedClaims:
+        type: array
+        items:
+          type: string
+      nonEditable:
+        type: boolean
+  AccessPolicyDefinitionDto:
+    type: object
+    properties:
+      policyClaims:
+        type: array
+        items:
+          $ref: '#/definitions/PolicyClaimDto'
+      version:
+        type: string
+  PolicyClaimDto:
+    type: object
+    properties:
+      type:
+        type: string
+      value:
+        type: string
+      permission:
+        type: string
+  CreateProtectedResourceDto:
+    required:
+      - name
+      - displayName
+    type: object
+    properties:
+      name:
+        type: string
+      displayName:
+        type: string
+      description:
+        type: string
+      allowedClaims:
+        type: array
+        items:
+          type: string
+      resourceSecrets:
+        type: array
+        items:
+          $ref: '#/definitions/CreateSecretDto'
+  ProtectedResourceDto:
+    type: object
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+      displayName:
+        type: string
+      description:
+        type: string
+      enabled:
+        type: boolean
+      secrets:
+        type: array
+        items:
+          $ref: '#/definitions/SecretDto'
+      scopes:
+        type: array
+        items:
+          $ref: '#/definitions/ScopeDto'
+      allowedClaims:
+        type: array
+        items:
+          type: string
+      created:
+        format: date-time
+        type: string
+      nonEditable:
+        type: boolean
+  ScopeDto:
+    type: object
+    properties:
+      id:
+        format: int32
+        type: integer
+      name:
+        type: string
+      displayName:
+        type: string
+      description:
+        type: string
+      required:
+        type: boolean
+      emphasize:
+        type: boolean
+      showInDiscoveryDocument:
+        type: boolean
+      userClaims:
+        type: array
+        items:
+          type: string
+  CreateRoleDto:
+    type: object
+    properties:
+      name:
+        type: string
+      description:
+        type: string
+  RoleDto:
+    type: object
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+      description:
+        type: string
+      reserved:
+        type: boolean
+  UserDto:
+    type: object
+    properties:
+      subject:
+        type: string
+      username:
+        type: string
+      email:
+        type: string
+      firstName:
+        type: string
+      lastName:
+        type: string
+      isBlocked:
+        type: boolean
+      lockoutEnd:
+        format: date-time
+        type: string
+      lockoutEnabled:
+        type: boolean
+      isDeleted:
+        type: boolean
+      roles:
+        type: array
+        items:
+          $ref: '#/definitions/RoleDto'
+      claims:
+        type: array
+        items:
+          $ref: '#/definitions/ClaimDto'
+  CreateUserDto:
+    type: object
+    properties:
+      username:
+        type: string
+      password:
+        type: string
+      email:
+        type: string
+      firstName:
+        type: string
+      lastName:
+        type: string
+      roles:
+        type: array
+        items:
+          $ref: '#/definitions/RoleDto'
+      claims:
+        type: array
+        items:
+          $ref: '#/definitions/ClaimDto'
+  EditClaimDto:
+    type: object
+    properties:
+      oldClaimType:
+        type: string
+      oldClaimValue:
+        type: string
+      newClaimType:
+        type: string
+      newClaimValue:
+        type: string
+  UserLoginDto:
+    type: object
+    properties:
+      loginProvider:
+        type: string
+      providerKey:
+        type: string
+      providerDisplayName:
+        type: string
+      friendlyProviderDisplayName:
+        type: string
+      createdAt:
+        format: date-time
+        type: string
+  UserClaimDto:
+    type: object
+    properties:
+      subject:
+        type: string
+      claims:
+        type: array
+        items:
+          $ref: '#/definitions/ClaimDto'
+  ClientDtoRet:
+    type: array
+    items:
+      $ref: '#/definitions/ClientDto'
