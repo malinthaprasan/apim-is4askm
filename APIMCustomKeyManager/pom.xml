@@ -33,12 +33,43 @@
                         <configuration>
                             <inputSpec>${project.basedir}/src/main/resources/adminAPI.yaml</inputSpec>
                             <language>java</language>
+                            <output>${project.basedir}/gen/client</output>
                             <configOptions>
-                                <sourceFolder>src/main/java/gen/</sourceFolder>
+                                <sourceFolder>src/java</sourceFolder>
                                 <modelPackage>org.wso2.services.is4.model</modelPackage>
                                 <apiPackage>org.wso2.services.is4.api</apiPackage>
                                 <invokerPackage>org.wso2.services.is4</invokerPackage>
                             </configOptions>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>add-source</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>add-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>gen/client/src/java</source>
+                            </sources>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>add-test-source</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>add-test-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>gen/client/src/test/java</source>
+                            </sources>
                         </configuration>
                     </execution>
                 </executions>
