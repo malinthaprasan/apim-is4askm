@@ -21,8 +21,6 @@ import org.wso2.carbon.apimgt.impl.factory.KeyManagerHolder;
 import org.wso2.services.is4.ApiClient;
 import org.wso2.services.is4.api.ClientsApi;
 import org.wso2.services.is4.model.ClientDto;
-import org.wso2.services.is4.model.CreateClientDto;
-import org.wso2.services.is4.model.CreateSecretDto;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -122,31 +120,31 @@ public class IdentityExpressAsKMImpl implements KeyManager {
 
     public AccessTokenRequest buildAccessTokenRequestFromOAuthApp(OAuthApplicationInfo oAuthApplication,
                                                                   AccessTokenRequest tokenRequest) throws APIManagementException {
-        if (oAuthApplication == null) {
+            if (oAuthApplication == null) {
+                return tokenRequest;
+            }
+            if (tokenRequest == null) {
+                tokenRequest = new AccessTokenRequest();
+            }
+
+            if (oAuthApplication.getClientId() == null) {
+                throw new APIManagementException("Consumer key is missing.");
+            }
+
+            tokenRequest.setClientId(oAuthApplication.getClientId().split("###")[1]);
+            
+            if (oAuthApplication.getParameter("tokenScope") != null) {
+                String[] tokenScopes = (String[]) oAuthApplication.getParameter("tokenScope");
+                tokenRequest.setScope(tokenScopes);
+                oAuthApplication.addParameter("tokenScope", Arrays.toString(tokenScopes));
+            }
+
+            if (oAuthApplication.getParameter(ApplicationConstants.VALIDITY_PERIOD) != null) {
+                tokenRequest.setValidityPeriod(Long.parseLong((String) oAuthApplication.getParameter(ApplicationConstants
+                        .VALIDITY_PERIOD)));
+            }
+
             return tokenRequest;
-        }
-        if (tokenRequest == null) {
-            tokenRequest = new AccessTokenRequest();
-        }
-
-        if (oAuthApplication.getClientId() == null || oAuthApplication.getClientSecret() == null) {
-            throw new APIManagementException("Consumer key or Consumer Secret missing.");
-        }
-        tokenRequest.setClientId(oAuthApplication.getClientId());
-        tokenRequest.setClientSecret(oAuthApplication.getClientSecret());
-
-        if (oAuthApplication.getParameter("tokenScope") != null) {
-            String[] tokenScopes = (String[]) oAuthApplication.getParameter("tokenScope");
-            tokenRequest.setScope(tokenScopes);
-            oAuthApplication.addParameter("tokenScope", Arrays.toString(tokenScopes));
-        }
-
-        if (oAuthApplication.getParameter(ApplicationConstants.VALIDITY_PERIOD) != null) {
-            tokenRequest.setValidityPeriod(
-                    Long.parseLong((String) oAuthApplication.getParameter(ApplicationConstants.VALIDITY_PERIOD)));
-        }
-
-        return tokenRequest;
     }
 
     protected void handleException(String msg) throws APIManagementException {
@@ -252,43 +250,19 @@ public class IdentityExpressAsKMImpl implements KeyManager {
         // Creating DCR Application
         OAuthApplicationInfo oAuthApplicationInfo = oauthAppRequest.getOAuthApplicationInfo();
 
-        log.debug("Creating a new oAuthApp in Authorization Server...");
+        log.debug("Creating a new OAuthApp in Authorization Server...");
 
-        KeyManagerConfiguration config = KeyManagerHolder.getKeyManagerInstance().getKeyManagerConfiguration();
-
-        // Getting Client Registration Url and Access Token from Config.
-        String registrationEndpoint = config.getParameter(Constants.CLIENT_REG_ENDPOINT);
-        String registrationToken = config.getParameter(Constants.REGISTRAION_ACCESS_TOKEN);
-
-        try {
-            // Generate UUIDs as Client Id and Secret
-            oAuthApplicationInfo.setClientId(generateUUID());
-            oAuthApplicationInfo.setClientSecret(generateUUID());
+        try {        
+            IS4AdminAPIClient adminAPIClient = new IS4AdminAPIClient();
+            
             // Create API request
-            ApiClient apiClient = new ApiClient();
-            apiClient.setConnectTimeout(10000);
-            apiClient.setReadTimeout(10000);
-            apiClient.setWriteTimeout(10000);
-            apiClient.setBasePath(registrationEndpoint);
+            ClientDto dto = adminAPIClient
+                    .addClient(oAuthApplicationInfo.getClientName(), oAuthApplicationInfo.getCallBackURL());
 
-            ClientsApi clientsApi = new ClientsApi(apiClient);
-
-            CreateClientDto clientDto = new CreateClientDto();
-            clientDto.setClientName(oAuthApplicationInfo.getClientName());
-            clientDto.setClientId(oAuthApplicationInfo.getClientId());
-
-            List<CreateSecretDto> clientSecrets = new ArrayList<CreateSecretDto>();
-            CreateSecretDto secretDto = new CreateSecretDto();
-            // TODO set other relevant values
-            secretDto.setValue(oAuthApplicationInfo.getClientSecret());
-            clientSecrets.add(secretDto);
-            clientDto.setClientSecrets(clientSecrets);
-
-            // Call the backend
-            clientsApi.clientsPost(clientDto);
+            oAuthApplicationInfo.setClientId(dto.getId() + "###" + dto.getClientId());
             log.debug("BE createApplication success");
             return oAuthApplicationInfo;
-        } catch (Exception e) {
+        } catch (Throwable e) {
             log.error("Error in connection to Backend API in createApplication", e);
         }
         return null;
@@ -314,8 +288,8 @@ public class IdentityExpressAsKMImpl implements KeyManager {
 
         try {
             // Generate UUIDs as Client Id and Secret
-            oAuthApplicationInfo.setClientId(generateUUID());
-            oAuthApplicationInfo.setClientSecret(generateUUID());
+//            oAuthApplicationInfo.setClientId(generateUUID());
+//            oAuthApplicationInfo.setClientSecret(generateUUID());
             // Create API request
             ApiClient apiClient = new ApiClient();
             apiClient.setConnectTimeout(10000);
@@ -343,25 +317,11 @@ public class IdentityExpressAsKMImpl implements KeyManager {
         log.debug("Deleting a OAuth Client (" + consumerKey + ") in Authorization Server..");
 
         try {
-            KeyManagerConfiguration config = KeyManagerHolder.getKeyManagerInstance().getKeyManagerConfiguration();
-
-            // Getting Client Registration url and Access Token from config.
-            String registrationEndpoint = config.getParameter(Constants.CLIENT_REG_ENDPOINT);
-
-            // Create API request
-            ApiClient apiClient = new ApiClient();
-            apiClient.setConnectTimeout(10000);
-            apiClient.setReadTimeout(10000);
-            apiClient.setWriteTimeout(10000);
-            apiClient.setBasePath(registrationEndpoint);
-
-            ClientsApi clientsApi = new ClientsApi(apiClient);
-
-            // Call the back end
-            clientsApi.clientsByIdDelete(consumerKey);
-            log.debug("BE deleteApplication success");
+            IS4AdminAPIClient adminAPIClient = new IS4AdminAPIClient();
+            adminAPIClient.deleteClientByClientId(consumerKey.split("###")[0]);
+            log.debug("BE deleteApplication success : " + consumerKey);
         } catch (Exception e) {
-            log.error("Error in connection to Backend API in updateApplication", e);
+            log.error("Error in connection to Backend API in deleteApplication", e);
         }
     }
 
@@ -369,16 +329,16 @@ public class IdentityExpressAsKMImpl implements KeyManager {
         log.debug("Retriving OAuth Client (" + consumerKey + ") in Authorization Server..");
         try {
 
-            ClientDto clientDto = getClientFromBE(consumerKey);
+            IS4AdminAPIClient adminAPIClient = new IS4AdminAPIClient();
+            ClientDto clientDto = adminAPIClient.getClientById(consumerKey.split("###")[0]);
 
             OAuthApplicationInfo oAuthApplicationInfo = new OAuthApplicationInfo();
             oAuthApplicationInfo.setClientId(clientDto.getClientId());
             oAuthApplicationInfo.setClientName(clientDto.getClientName());
-            oAuthApplicationInfo.setClientSecret(clientDto.getClientSecrets().get(0).getValue());
-            oAuthApplicationInfo.setCallBackURL(clientDto.getFrontChannelLogoutUri());
-            // TODO map the values
+            oAuthApplicationInfo.setClientSecret("hidden-secret");
+            oAuthApplicationInfo.setCallBackURL(clientDto.getRedirectUris().get(0));
 
-            log.debug("BE retrieveApplication success");
+            log.debug("retrieveApplication success for " + consumerKey);
             return oAuthApplicationInfo;
         } catch (Exception e) {
             log.error("Error in connection to Backend API in updateApplication", e);
