@@ -506,7 +506,7 @@ paths:
         - application/json
         - text/json
         - application/*+json
-      produces: []
+      produces: [text/plain]
       parameters:
         - name: client
           in: body
@@ -514,8 +514,11 @@ paths:
           schema:
             $ref: '#/definitions/CreateClientDto'
       responses:
-        '200':
+        '201':
           description: Success
+          schema:
+            type: string
+            example: Client Successfully Created
   '/Clients/{id}':
     get:
       security:
@@ -574,7 +577,7 @@ paths:
           required: true
           type: string
       responses:
-        '200':
+        '204':
           description: Success
   '/Clients/{id}/secrets':
     post:
@@ -631,7 +634,7 @@ paths:
           schema:
             $ref: '#/definitions/SecretDto'
       responses:
-        '200':
+        '204':
           description: Success
     delete:
       security:
@@ -652,7 +655,7 @@ paths:
           type: integer
           format: int32
       responses:
-        '200':
+        '204':
           description: Success
   /IdentityResources:
     get:
