@@ -8,7 +8,7 @@
  
 2. In api-manager.xml
 
-``` xml
+```xml
     <APIKeyManager>
         <KeyManagerClientImpl>com.wso2.services.apim.extension.IdentityExpressAsKMImpl</KeyManagerClientImpl>
         <Configuration>
@@ -39,4 +39,12 @@ ${m2-repo-home}/com/squareup/okhttp/logging-interceptor/2.7.5/logging-intercepto
 ${m2-repo-home}/com/squareup/okhttp/okhttp/2.7.5/okhttp-2.7.5.jar
 ${m2-repo-home}/com/squareup/okio/okio/1.6.0/okio-1.6.0.jar
 ${m2-repo-home}/org/threeten/threetenbp/1.3.5/threetenbp-1.3.5.jar
+```
+
+## Troubleshooting
+
+Add below logging configuration in `repository/conf/log4j.properties` file.
+
+```properties
+log4j.logger.com.wso2.services.apim.extension=DEBUG
 ```

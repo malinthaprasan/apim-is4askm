@@ -7,6 +7,7 @@ import org.wso2.services.is4.model.ClientDto;
 import org.wso2.services.is4.model.ClientDtoRet;
 import org.wso2.services.is4.model.CreateClientDto;
 import org.wso2.services.is4.model.CreateSecretDto;
+import org.wso2.services.is4.model.SecretDto;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -29,9 +30,17 @@ public class IS4AdminAPIClient {
         return clientsApi.clientsByIdGet(id);
     }
 
-    public ClientDto addClient(String name, final String callbackURI) throws ApiException {
+    /**
+     * Creates a client with {name}_{consumer-key} format
+     * 
+     * @param namePrefix Name prefix
+     * @param callbackURI Callback URL
+     * @return
+     * @throws ApiException
+     */
+    public ClientDto addClient(String namePrefix, final String callbackURI) throws ApiException {
         CreateClientDto createClientDto = new CreateClientDto();
-        createClientDto.setClientName(name);
+        createClientDto.setClientName(namePrefix);
         if (callbackURI == null) {
             createClientDto.setRedirectUris(new ArrayList<String>() {{
                 add(Constants.CALLBACK_URL_DEFAULT);
@@ -45,25 +54,64 @@ public class IS4AdminAPIClient {
         return addClient(createClientDto);
     }
 
+    /**
+     * Client name will be in {name}_{consumer-key} format
+     * 
+     * @param client
+     * @return
+     * @throws ApiException
+     */
     public ClientDto addClient(CreateClientDto client) throws ApiException {
-        final String id = UUID.randomUUID().toString();
         if (client.getClientId() == null) {
-            client.setClientId(id);
+            client.setClientId(UUID.randomUUID().toString());
         }
+        client.setClientName(client.getClientName() + "_" + client.getClientId());
         client.setClientType(CreateClientDto.ClientTypeEnum.NUMBER_1);
 
-        List<CreateSecretDto> secretDtos = new ArrayList<>();
+        List<CreateSecretDto> secretDtosCreate = new ArrayList<>();
         CreateSecretDto secretDto = new CreateSecretDto();
         secretDto.setType("Shared Secret");
-        secretDtos.add(secretDto);
-        client.setClientSecrets(secretDtos);
+        secretDto.setValue(UUID.randomUUID().toString());
+        secretDtosCreate.add(secretDto);
+        client.setClientSecrets(secretDtosCreate);
 
         clientsApi.clientsPost(client);
 
-        return getClientByName(client.getClientName());
+        //update secrets
+        ClientDto retrievedClient = getClientByName(client.getClientName());
+        List<SecretDto> secretDtosGet = retrievedClient.getClientSecrets();
+        for (int i = 0; i < Math.min(secretDtosGet.size(), secretDtosCreate.size()); i++) {
+            secretDtosGet.get(i).setValue(secretDtosCreate.get(i).getValue());
+        }
+        
+        return retrievedClient;
     }
-    
-    public ClientDto getClientByName(String name) throws ApiException {
+
+    public boolean deleteClientById(String id) throws ApiException {
+        clientsApi.clientsByIdDelete(id);
+        return true;
+    }
+
+    public boolean deleteClientByConsumerKey(String ConsumerKey) throws ApiException {
+        ClientDto clientDto = getClientByConsumerKey(ConsumerKey);
+        deleteClientById(clientDto.getId());
+        return true;
+    }
+
+    public ClientDtoRet getAllClients() throws ApiException {
+        return clientsApi.clientsGet(null);
+    }
+
+    public void updateClientById(String id, ClientDto clientDto) throws ApiException {
+        clientsApi.clientsByIdPut(id, clientDto);
+    }
+
+    public ClientDto getClientByConsumerKey(String consumerKey) throws ApiException {
+        return getClientByName(consumerKey);
+    }
+
+
+    private ClientDto getClientByName(String name) throws ApiException {
         ClientDtoRet clientDtos = clientsApi.clientsGet(name);
 
         if (clientDtos != null && clientDtos.size() > 0) {
@@ -75,13 +123,4 @@ public class IS4AdminAPIClient {
             throw new ApiException("Client with name " + name + " not found.");
         }
     }
-
-    public boolean deleteClientByClientId(String id) throws ApiException {
-        clientsApi.clientsByIdDelete(id);
-        return true;
-    }
-
-    public ClientDtoRet getAllClients() throws ApiException {
-        return clientsApi.clientsGet(null);
-    } 
 }

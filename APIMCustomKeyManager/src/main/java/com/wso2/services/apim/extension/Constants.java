@@ -3,6 +3,8 @@ package com.wso2.services.apim.extension;
 public class Constants {
     public static final String BASE_PATH = "http://localhost:5001";
     public static final String CALLBACK_URL_DEFAULT = "http://localhost/callback";
+
+    public static final String APP_ATTR_IS4_PREFIX = "is4.";
     
     public static final String JSON_CLIENT_ID = "client_id";
     public static final String JSON_CLIENT_SECRET = "client_secret";
