@@ -8,6 +8,7 @@ import org.wso2.services.is4.model.CreateClientDto;
 
 import java.util.ArrayList;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -27,7 +28,7 @@ public class IS4AdminAPIClientTest {
 
         for (ClientDto dto : response) {
             if (dto.getClientName().equals(CLIENT_NAME)) {
-                api.deleteClientByClientId(dto.getId());
+                api.deleteClientById(dto.getId());
                 break;
             }
         }
@@ -46,22 +47,37 @@ public class IS4AdminAPIClientTest {
     }
     
     @Test
-    public void addClientUsingProvidedConsumerKeyAndRetrieveByItTest() throws ApiException {
+    public void addClientUsingProvidedConsumerKeyAsNameAndRetrieveByItTest() throws ApiException {
+        String consumerKey = "12345";
+
         CreateClientDto createClientDto = new CreateClientDto();
-        createClientDto.setClientId("12345");
+        createClientDto.setClientId(consumerKey);
         createClientDto.setClientName(CLIENT_NAME);
         createClientDto.setRedirectUris(new ArrayList<String>() {{
             add(Constants.CALLBACK_URL_DEFAULT);
         }});
         api.addClient(createClientDto);
         
-        ClientDto retrieved = api.getClientById("12345");
+        ClientDto retrieved = api.getClientByConsumerKey(consumerKey);
         assertNotNull(retrieved);
-        assertTrue(retrieved.getClientName().equals(CLIENT_NAME));
+        assertTrue(retrieved.getClientName().contains(CLIENT_NAME));
+        assertTrue(retrieved.getClientName().contains(consumerKey));
     }
 
     @Test
     public void clientsPostTestWithoutCallback() throws ApiException {
         api.addClient(CLIENT_NAME, null);
     }
+    
+//    @Test
+//    public void updateClientIdWithIdTest() throws ApiException {
+//        ClientDto addedApp = api.addClient(CLIENT_NAME, CLIENT_CALLBACK);
+//        addedApp.setClientId(addedApp.getId());
+//        api.updateClient(addedApp.getId(), addedApp);
+//        
+//        ClientDto updatedApp = api.getClientById(addedApp.getId());
+//        assertEquals("Updating consumer key with id failed", addedApp.getId(), updatedApp.getClientId());
+//    }
+    
+    
 }
