@@ -41,7 +41,7 @@ ${m2-repo-home}/com/squareup/okio/okio/1.6.0/okio-1.6.0.jar
 ${m2-repo-home}/org/threeten/threetenbp/1.3.5/threetenbp-1.3.5.jar
 ```
 
-4. Configuring IS4
+### Configurations in IS4
 
 * Login via Admin API and select `Resources` -> `Protected Resources`.
 * Click `Add` and specify the `Id` as "api_gw" and `Display Name` API Manager GW.
