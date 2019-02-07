@@ -41,6 +41,17 @@ ${m2-repo-home}/com/squareup/okio/okio/1.6.0/okio-1.6.0.jar
 ${m2-repo-home}/org/threeten/threetenbp/1.3.5/threetenbp-1.3.5.jar
 ```
 
+4. Configuring IS4
+
+* Login via Admin API and select `Resources` -> `Protected Resources`.
+* Click `Add` and specify the `Id` as "api_gw" and `Display Name` API Manager GW.
+
+![alt text](images/add_resource.jpg)
+
+* Finally the resource would look like below
+
+![alt text](images/final_add_resource.jpg)
+
 ## Troubleshooting
 
 Add below logging configuration in `repository/conf/log4j.properties` file.
