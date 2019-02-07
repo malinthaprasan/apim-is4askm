@@ -31,7 +31,7 @@ public class APIMClient {
             Map<String, String> appAttributes = getApplicationAttributes(Integer.getInteger(applicationId));
             log.debug(logPrefix + "App Attributes: " + appAttributes);
             log.debug(logPrefix + "Completed");
-            return appAttributes.get(Constants.APP_ATTR_IS4_PREFIX + tokenType);
+            return appAttributes.get(Constants.IS4_APP_ATTR_PREFIX_DEFAULT + tokenType);
         } else {
             throw new APIManagementException("Cannot find APIM Application Id from consumer key " + consumerKey);
         }

@@ -1,13 +1,20 @@
 package com.wso2.services.apim.extension;
 
 public class Constants {
-    public static final String BASE_PATH = "http://localhost:5001";
+    public static final String ADMIN_API_BASE_PATH_DEFAULT = "http://localhost:5001";
     public static final String CALLBACK_URL_DEFAULT = "http://localhost/callback";
+    public static final String IS4_APP_ATTR_PREFIX_DEFAULT = "is4.";
+    public static final String IS4_TOKEN_SCOPE_DEFAULT = "api_gw";
+    public static final String IS4_TOKEN_API_URL_DEFAULT = "http://ids:5003/connect/token";
 
-    public static final String APP_ATTR_IS4_PREFIX = "is4.";
-    
+    public static final String APIM_TOKEN_SCOPE_DEFAULT = "default";
     public static final String JSON_CLIENT_ID = "client_id";
     public static final String JSON_CLIENT_SECRET = "client_secret";
+
+    public static final String OAUTH_RESPONSE_ACCESSTOKEN = "access_token";
+    public static final String OAUTH_RESPONSE_EXPIRY_TIME = "expires_in";
+    public static final String GRANT_TYPE_VALUE = "client_credentials";
+    public static final String GRANT_TYPE_PARAM_VALIDITY = "validity_period";
     
     public static final String CLIENT_REG_ENDPOINT = "RegistrationEndpoint";
     public static final String CLIENT_NAME = "name";

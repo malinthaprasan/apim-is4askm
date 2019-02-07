@@ -5,6 +5,9 @@ import org.apache.commons.logging.LogFactory;
 import org.wso2.carbon.apimgt.api.model.ApplicationConstants;
 import org.wso2.carbon.apimgt.api.model.OAuthApplicationInfo;
 import org.wso2.services.is4.model.ClientDto;
+import org.wso2.services.is4.model.SecretDto;
+
+import java.util.List;
 
 public class MappingUtil {
 
@@ -46,4 +49,17 @@ public class MappingUtil {
         
         return oAuthAppInfo;
     }
+
+    public static ClientDto setSecrets(ClientDto from, ClientDto to) {
+        List<SecretDto> targetSecretDtos = to.getClientSecrets();
+        List<SecretDto> sourceSecretDtos = from.getClientSecrets();
+        
+        if(targetSecretDtos != null && sourceSecretDtos != null) {
+            for (int i = 0; i < Math.min(targetSecretDtos.size(), sourceSecretDtos.size()); i++) {
+                targetSecretDtos.get(i).setValue(sourceSecretDtos.get(i).getValue());
+            }
+        }
+        return to;
+    }
+    
 }
