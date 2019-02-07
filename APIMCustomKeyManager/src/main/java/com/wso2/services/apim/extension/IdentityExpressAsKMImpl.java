@@ -1,5 +1,10 @@
 package com.wso2.services.apim.extension;
 
+import com.squareup.okhttp.FormEncodingBuilder;
+import com.squareup.okhttp.OkHttpClient;
+import com.squareup.okhttp.Request;
+import com.squareup.okhttp.RequestBody;
+import com.squareup.okhttp.Response;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.logging.Log;
@@ -11,6 +16,7 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
+import org.json.JSONException;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -20,6 +26,7 @@ import org.wso2.carbon.apimgt.api.model.*;
 import org.wso2.carbon.apimgt.impl.AbstractKeyManager;
 import org.wso2.carbon.apimgt.impl.factory.KeyManagerHolder;
 import org.wso2.services.is4.ApiClient;
+import org.wso2.services.is4.ApiException;
 import org.wso2.services.is4.api.ClientsApi;
 import org.wso2.services.is4.model.ClientDto;
 
@@ -33,7 +40,8 @@ import java.util.*;
 public class IdentityExpressAsKMImpl extends AbstractKeyManager {
 
     private static Log log = LogFactory.getLog(IdentityExpressAsKMImpl.class);
-
+    private static final String ERR_MESSAGE = " Error occurred during operation.";
+    
     private KeyManagerConfiguration keyManagerConfiguration;
     private IS4AdminAPIClient is4AdminAPIClient;
 //    private APIMClient apimClient;
@@ -127,33 +135,53 @@ public class IdentityExpressAsKMImpl extends AbstractKeyManager {
     }
 
     public AccessTokenRequest buildAccessTokenRequestFromOAuthApp(OAuthApplicationInfo oAuthApplication,
-                                                                  AccessTokenRequest tokenRequest) throws APIManagementException {
-            if (oAuthApplication == null) {
-                return tokenRequest;
-            }
-            if (tokenRequest == null) {
-                tokenRequest = new AccessTokenRequest();
-            }
-
-            if (oAuthApplication.getClientId() == null) {
-                throw new APIManagementException("Consumer key is missing.");
-            }
-
-            tokenRequest.setClientId(oAuthApplication.getClientId());
-            
-            //todo: set properly
-//            if (oAuthApplication.getParameter("tokenScope") != null) {
-//                String tokenScopes = (String) oAuthApplication.getParameter("tokenScope");
-//                tokenRequest.setScope(tokenScopes);
-//                oAuthApplication.addParameter("tokenScope", Arrays.toString(tokenScopes));
-//            }
-
-            if (oAuthApplication.getParameter(ApplicationConstants.VALIDITY_PERIOD) != null) {
-                tokenRequest.setValidityPeriod(Long.parseLong((String) oAuthApplication.getParameter(ApplicationConstants
-                        .VALIDITY_PERIOD)));
-            }
-
+            AccessTokenRequest tokenRequest) throws APIManagementException {
+        if (oAuthApplication == null) {
             return tokenRequest;
+        }
+        if (tokenRequest == null) {
+            tokenRequest = new AccessTokenRequest();
+        }
+
+        if (oAuthApplication.getClientId() == null || oAuthApplication.getClientSecret() == null) {
+            throw new APIManagementException("Consumer key or Consumer Secret missing.");
+        }
+        tokenRequest.setClientId(oAuthApplication.getClientId());
+        tokenRequest.setClientSecret(oAuthApplication.getClientSecret());
+
+        Object tokenScopeObj = oAuthApplication.getParameter("tokenScope");
+        if (tokenScopeObj != null) {
+            if (tokenScopeObj instanceof String[]) {
+                String[] tokenScopeArr = (String[]) tokenScopeObj;
+                //change APIM default scope to is4 default scope
+                for (int i = 0; i < tokenScopeArr.length; i++) {
+                    if (Constants.APIM_TOKEN_SCOPE_DEFAULT.equals(tokenScopeArr[i])) {
+                        tokenScopeArr[i] = Constants.IS4_TOKEN_SCOPE_DEFAULT;
+                    }
+                }
+                tokenRequest.setScope((String[]) tokenScopeObj);
+            } else if (tokenScopeObj instanceof String) {
+                String tokenScope = (String) tokenScopeObj;
+                //change APIM default scope to is4 default scope
+                if (Constants.APIM_TOKEN_SCOPE_DEFAULT.equals(tokenScope)) {
+                    tokenScope = Constants.IS4_TOKEN_SCOPE_DEFAULT;
+                }
+                String[] tokenScopes = new String[1];
+                tokenScopes[0] = tokenScope;
+                tokenRequest.setScope(tokenScopes);
+            }
+        } else {
+            String[] tokenScopes = new String[1];
+            tokenScopes[0] = Constants.IS4_TOKEN_SCOPE_DEFAULT;;
+            tokenRequest.setScope(tokenScopes);
+        }
+
+        if (oAuthApplication.getParameter(ApplicationConstants.VALIDITY_PERIOD) != null) {
+            tokenRequest.setValidityPeriod(Long.parseLong((String) oAuthApplication.getParameter(ApplicationConstants
+                    .VALIDITY_PERIOD)));
+        }
+
+        return tokenRequest;
     }
 
     protected void handleException(String msg) throws APIManagementException {
@@ -161,7 +189,7 @@ public class IdentityExpressAsKMImpl extends AbstractKeyManager {
         throw new APIManagementException(msg);
     }
 
-    protected void handleException(String msg, Exception e) throws APIManagementException {
+    protected void handleException(String msg, Throwable e) throws APIManagementException {
         log.error(msg, e);
         throw new APIManagementException(msg, e);
     }
@@ -266,21 +294,29 @@ public class IdentityExpressAsKMImpl extends AbstractKeyManager {
             ClientDto dto = is4AdminAPIClient
                     .addClient(oAuthApplicationInfo.getClientName(), oAuthApplicationInfo.getCallBackURL());
             
-            
             //todo: set grant types from app request
             dto.setAllowedGrantTypes(new ArrayList<String>() {{
                 add("client_credentials");
             }});
-            
-            is4AdminAPIClient.updateClientById(dto.getId(), dto);
-            dto = is4AdminAPIClient.getClientById(dto.getId());
 
-            oAuthApplicationInfo = MappingUtil.getOAuthAppInfoFromIS4Client(dto, oAuthApplicationInfo);
-            
+            //todo: Need to add a scope to the app otherwise token generation is not allowed. 
+            // Need to check and fix properly.
+            dto.setAllowedScopes(new ArrayList<String>() {{
+                add(Constants.IS4_TOKEN_SCOPE_DEFAULT);
+            }});
+
+            is4AdminAPIClient.updateClientById(dto.getId(), dto);
+            ClientDto updatedDto = is4AdminAPIClient.getClientById(dto.getId());
+            updatedDto = MappingUtil.setSecrets(dto, updatedDto);
+
+            oAuthApplicationInfo = MappingUtil.getOAuthAppInfoFromIS4Client(updatedDto, oAuthApplicationInfo);
             log.debug(logPrefix + "Completed");
             return oAuthApplicationInfo;
-        } catch (Throwable e) {
-            log.error( logPrefix + " Error occurred during operation.", e);
+        } catch (LinkageError e) { //can execute when dependencies are not added properly
+            handleException(logPrefix + ERR_MESSAGE + " Please make sure " 
+                    + "correct dependencies are added to the runtime", e);
+        } catch (ApiException e) {
+            handleException(logPrefix + ERR_MESSAGE, e);
         }
         return null;
     }
@@ -324,7 +360,7 @@ public class IdentityExpressAsKMImpl extends AbstractKeyManager {
             clientsApi.clientsByIdPut(consumerKey, clientDto);
             log.debug("BE updateApplication success");
             return oAuthApplicationInfo;
-        } catch (Exception e) {
+        } catch (ApiException e) {
             log.error("Error in connection to Backend API in updateApplication", e);
         }
         return null;
@@ -336,8 +372,8 @@ public class IdentityExpressAsKMImpl extends AbstractKeyManager {
         try {
             is4AdminAPIClient.deleteClientByConsumerKey(consumerKey);
             log.debug(logPrefix + "Completed");
-        } catch (Exception e) {
-            log.error(logPrefix + " Error occurred during operation.", e);
+        } catch (ApiException e) {
+            handleException(logPrefix + ERR_MESSAGE, e);
         }
     }
 
@@ -350,8 +386,8 @@ public class IdentityExpressAsKMImpl extends AbstractKeyManager {
             OAuthApplicationInfo oAuthApplicationInfo = MappingUtil.getOAuthAppInfoFromIS4Client(clientDto);
             log.debug(logPrefix + " Completed");
             return oAuthApplicationInfo;
-        } catch (Exception e) {
-            log.error(logPrefix + " Error occurred during operation.", e);
+        } catch (ApiException e) {
+            handleException(logPrefix + ERR_MESSAGE, e);
         }
         return null;
     }
@@ -381,13 +417,45 @@ public class IdentityExpressAsKMImpl extends AbstractKeyManager {
     }
 
     public AccessTokenInfo getNewApplicationAccessToken(AccessTokenRequest accessTokenRequest) throws APIManagementException {
-        log.info("WARNING : request to getNewApplicationAccessToken > " + accessTokenRequest);
+        String logPrefix = "[Getting new access token for App:" + accessTokenRequest.getClientId() + "] ";
+        
+        OkHttpClient client = new OkHttpClient();
+
+        RequestBody formEncoding = new FormEncodingBuilder()
+                .add("client_id", accessTokenRequest.getClientId())
+                .add("client_secret", accessTokenRequest.getClientSecret())
+                .add("grant_type", "client_credentials")
+                .add("scope", Constants.IS4_TOKEN_SCOPE_DEFAULT)
+                .build();
+
+        Request request = new Request.Builder()
+                .url(Constants.IS4_TOKEN_API_URL_DEFAULT)
+                .post(formEncoding)
+                .build();
+
+        Response response;
         AccessTokenInfo tokenInfo = new AccessTokenInfo();
-        tokenInfo.setAccessToken("sample access token");
-        tokenInfo.setConsumerKey("sample CK");
-        tokenInfo.setScope(new String[0]);
-        tokenInfo.setTokenValid(true);
-        tokenInfo.setValidityPeriod(3600);
+        try {
+            response = client.newCall(request).execute();
+
+            String accessTokenResponse = response.body().string();
+            log.debug(logPrefix + "Response: " + accessTokenResponse);
+
+            org.json.JSONObject obj = new org.json.JSONObject(accessTokenResponse);
+            String accessToken = obj.get(Constants.OAUTH_RESPONSE_ACCESSTOKEN).toString();
+            Long validityPeriod = Long.parseLong(obj.get(Constants.OAUTH_RESPONSE_EXPIRY_TIME).toString());
+            if (obj.has("scope")) {
+                tokenInfo.setScope(((String) obj.get("scope")).split(" "));
+            }
+            tokenInfo.setAccessToken(accessToken);
+            tokenInfo.setValidityPeriod(validityPeriod);
+            tokenInfo.setConsumerKey(accessTokenRequest.getClientId());
+            tokenInfo.setTokenValid(true);
+        } catch (IOException e) {
+            handleException("Error while creating tokens - " + e.getMessage(), e);
+        } catch (JSONException e) {
+            handleException("Error while parsing response from token api", e);
+        }
         return tokenInfo;
     }
 
