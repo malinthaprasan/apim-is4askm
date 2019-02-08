@@ -843,6 +843,8 @@ paths:
       responses:
         '200':
           description: Success
+          schema:
+            $ref: '#/definitions/ProtectedResourceList'
     post:
       security:
         - OAuth2: []
@@ -881,6 +883,8 @@ paths:
       responses:
         '200':
           description: Success
+          schema:
+            $ref: '#/definitions/ProtectedResourceDto'
     put:
       security:
         - OAuth2: []
@@ -2072,7 +2076,6 @@ definitions:
         items:
           type: string
       created:
-        format: date-time
         type: string
       nonEditable:
         type: boolean
@@ -2205,3 +2208,7 @@ definitions:
     type: array
     items:
       $ref: '#/definitions/ClientDto'
+  ProtectedResourceList:
+    type: array
+    items:
+      $ref: '#/definitions/ProtectedResourceDto'

@@ -8,10 +8,13 @@ import com.squareup.okhttp.Response;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.junit.Test;
+import org.wso2.carbon.apimgt.api.model.xsd.Scope;
 import org.wso2.services.is4.ApiException;
 import org.wso2.services.is4.model.ClientDto;
 import org.wso2.services.is4.model.ClientDtoRet;
 import org.wso2.services.is4.model.CreateClientDto;
+import org.wso2.services.is4.model.ProtectedResourceDto;
+import org.wso2.services.is4.model.ScopeDto;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -19,6 +22,7 @@ import java.util.ArrayList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class IS4AdminAPIClientTest {
 
@@ -26,6 +30,9 @@ public class IS4AdminAPIClientTest {
     private static final String CLIENT_NAME = "test-client";
     private static final String CLIENT_CALLBACK = "http://localhost/sample";
 
+    private static final String PROTECTED_RESOURCE_KEY = "sample-api1";
+    private static final String PROTECTED_RESOURCE_SCOPE = "sample-api1.read";
+    
     private final IS4AdminAPIClient api;
 
     public IS4AdminAPIClientTest() throws ApiException {
@@ -42,6 +49,8 @@ public class IS4AdminAPIClientTest {
                 break;
             }
         }
+        
+        api.deleteProtectedResourceWithKey(PROTECTED_RESOURCE_KEY);
     }
 
     @Test
@@ -88,9 +97,29 @@ public class IS4AdminAPIClientTest {
         ClientDto updatedApp = api.getClientById(addedApp.getId());
         assertEquals("Updating consumer key with id failed", addedApp.getId(), updatedApp.getClientId());
     }
-    
+
     @Test
-    public void createAppAndGenerateAccessTokenTest() throws ApiException, IOException {
+    public void createIdentityResourceAndRetrieveByKey() throws ApiException, IOException {
+        api.addProtectedResource(PROTECTED_RESOURCE_KEY, "sample-api1-sec", new String[] { PROTECTED_RESOURCE_SCOPE });
+        ProtectedResourceDto protectedResourceDto = api.getProtectedResource(PROTECTED_RESOURCE_KEY);
+
+        assertTrue("Protected resource name is wrong", protectedResourceDto.getName().equals(PROTECTED_RESOURCE_KEY));
+        assertTrue("Resource scopes are missing", protectedResourceDto.getScopes() != null && protectedResourceDto.getScopes().size() > 0);
+
+        boolean foundScope = false;
+        for (ScopeDto scope: protectedResourceDto.getScopes()) {
+            if (scope.getName().equals(PROTECTED_RESOURCE_SCOPE)) {
+                foundScope = true;
+            }
+        }
+
+        if (!foundScope) {
+            fail("Cannot find scope " + PROTECTED_RESOURCE_SCOPE);
+        }
+    }
+
+    @Test
+    public void createResourceAppAndGenerateAccessTokenTest() throws ApiException, IOException {
         /*
             curl -X POST http://ids:5003/connect/token -d "client_id=086410bc-505e-4ec6-81bb-25a30d04ed7d
             &client_secret=0b7ee9a2-bc43-4025-8fa8-568cd58f8447&grant_type=client_credentials&scope=api_gw admin_api"

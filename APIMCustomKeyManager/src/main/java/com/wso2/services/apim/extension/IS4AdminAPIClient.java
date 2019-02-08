@@ -1,22 +1,32 @@
 package com.wso2.services.apim.extension;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.wso2.services.is4.ApiClient;
 import org.wso2.services.is4.ApiException;
 import org.wso2.services.is4.api.ClientsApi;
+import org.wso2.services.is4.api.ProtectedResourcesApi;
 import org.wso2.services.is4.model.ClientDto;
 import org.wso2.services.is4.model.ClientDtoRet;
 import org.wso2.services.is4.model.CreateClientDto;
+import org.wso2.services.is4.model.CreateProtectedResourceDto;
 import org.wso2.services.is4.model.CreateSecretDto;
+import org.wso2.services.is4.model.ProtectedResourceDto;
+import org.wso2.services.is4.model.ProtectedResourceList;
+import org.wso2.services.is4.model.ScopeDto;
 import org.wso2.services.is4.model.SecretDto;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
 public class IS4AdminAPIClient {
 
     private final ClientsApi clientsApi;
-
+    private final ProtectedResourcesApi resourcesApi;
+    private static Log log = LogFactory.getLog(IS4AdminAPIClient.class);
+    
     public IS4AdminAPIClient() {
         clientsApi = new ClientsApi();
         ApiClient client = clientsApi.getApiClient();
@@ -24,6 +34,13 @@ public class IS4AdminAPIClient {
         client.setAccessToken(
                 "eyJhbGciOiJSUzI1NiIsImtpZCI6IjFjMzU3NzQ0MjZjZmFiZDhmOGMwMThjMjIzNDllOWRkIiwidHlwIjoiSldUIn0.eyJuYmYiOjE1NDkyNjc2OTEsImV4cCI6MTU1MTg1OTY5MSwiaXNzIjoiaHR0cDovL2lkczo1MDAzIiwiYXVkIjpbImh0dHA6Ly9pZHM6NTAwMy9yZXNvdXJjZXMiLCJhZG1pbl9hcGkiXSwiY2xpZW50X2lkIjoiYWRtaW5fdWlfc2FtcGxlIiwic3ViIjoiMjU4ZGY1OTEtMjI5Ni00Y2NlLTg4ZmQtN2NjNDEzMjc3Y2YwIiwiYXV0aF90aW1lIjoxNTQ5MjY3NjkxLCJpZHAiOiJsb2NhbCIsInJvbGUiOiJBZG1pblVJIEFkbWluaXN0cmF0b3IiLCJuYW1lIjoiaW5mb0Byb2Nrc29saWRrbm93bGVkZ2UuY29tIiwic2NvcGUiOlsib3BlbmlkIiwicHJvZmlsZSIsImFkbWluX2FwaSJdLCJhbXIiOlsicHdkIl19.nq01nPQfjhnDxfk9bBD5zFhHL2GtQqSrn5THxCOlfmO2w5zCfekPCc3XAHQSX932JvQXa0kFo7VKHQmRcFDMiB9qo3Y0UFREkrzd_DqMr35ditdCO95MxF2UC7r-pKgRNYDXDk1oRMRYs6_D9johAL7hhKW4bw61ZeUwUkzXugGhoX-wtp8NWHD1U2GtGKVqnC312s_tWVO7amCXpMWlN-EEKmdAhzV6VXEmD0f2u7yYdSryomuoDu9pFnrmk8JlgVKF3kWJ6SV7zf3mPfjdhUVHthB3PndwxRw1p6ZMvLN-JYZULQyL9tDdMMlJpWmhpf1jfRMyibjd8_5JP2YFUA");
         client.setDebugging(true);
+        
+        resourcesApi = new ProtectedResourcesApi();
+        ApiClient resourcesApiClient = resourcesApi.getApiClient();
+        resourcesApiClient.setBasePath(Constants.ADMIN_API_BASE_PATH_DEFAULT);
+        resourcesApiClient.setAccessToken(
+                "eyJhbGciOiJSUzI1NiIsImtpZCI6IjFjMzU3NzQ0MjZjZmFiZDhmOGMwMThjMjIzNDllOWRkIiwidHlwIjoiSldUIn0.eyJuYmYiOjE1NDkyNjc2OTEsImV4cCI6MTU1MTg1OTY5MSwiaXNzIjoiaHR0cDovL2lkczo1MDAzIiwiYXVkIjpbImh0dHA6Ly9pZHM6NTAwMy9yZXNvdXJjZXMiLCJhZG1pbl9hcGkiXSwiY2xpZW50X2lkIjoiYWRtaW5fdWlfc2FtcGxlIiwic3ViIjoiMjU4ZGY1OTEtMjI5Ni00Y2NlLTg4ZmQtN2NjNDEzMjc3Y2YwIiwiYXV0aF90aW1lIjoxNTQ5MjY3NjkxLCJpZHAiOiJsb2NhbCIsInJvbGUiOiJBZG1pblVJIEFkbWluaXN0cmF0b3IiLCJuYW1lIjoiaW5mb0Byb2Nrc29saWRrbm93bGVkZ2UuY29tIiwic2NvcGUiOlsib3BlbmlkIiwicHJvZmlsZSIsImFkbWluX2FwaSJdLCJhbXIiOlsicHdkIl19.nq01nPQfjhnDxfk9bBD5zFhHL2GtQqSrn5THxCOlfmO2w5zCfekPCc3XAHQSX932JvQXa0kFo7VKHQmRcFDMiB9qo3Y0UFREkrzd_DqMr35ditdCO95MxF2UC7r-pKgRNYDXDk1oRMRYs6_D9johAL7hhKW4bw61ZeUwUkzXugGhoX-wtp8NWHD1U2GtGKVqnC312s_tWVO7amCXpMWlN-EEKmdAhzV6VXEmD0f2u7yYdSryomuoDu9pFnrmk8JlgVKF3kWJ6SV7zf3mPfjdhUVHthB3PndwxRw1p6ZMvLN-JYZULQyL9tDdMMlJpWmhpf1jfRMyibjd8_5JP2YFUA");
+        resourcesApiClient.setDebugging(true);
     }
 
     public ClientDto getClientById(String id) throws ApiException {
@@ -110,6 +127,67 @@ public class IS4AdminAPIClient {
         return getClientByName(consumerKey);
     }
 
+    public ClientDto updateRetrievedClientWithScopes (ClientDto clientDto, String[] scopes) throws ApiException {
+        clientDto.setAllowedScopes(Arrays.asList(scopes));
+        clientsApi.clientsByIdPut(clientDto.getId(), clientDto);
+        return clientDto;
+    }
+
+    public ClientDto updateRetrievedClientWithGrantTypes (ClientDto clientDto, String[] grants) throws ApiException {
+        clientDto.setAllowedGrantTypes(Arrays.asList(grants));
+        clientsApi.clientsByIdPut(clientDto.getId(), clientDto);
+        return clientDto;
+    }
+
+    public ProtectedResourceDto getProtectedResource(String key) throws ApiException {
+        ProtectedResourceList resourceList = resourcesApi.protectedResourcesGet(key);
+        if (resourceList != null && resourceList.size() > 0) {
+            if (resourceList.size() > 1) {
+                throw new ApiException("Resources with name " + key + " found more than once.");
+            }
+            return resourceList.get(0);
+        } else {
+            throw new ApiException("Resources with name " + key + " not found.");
+        }
+    }
+
+    public void addProtectedResource(String key, String secret, String[] scopes) throws ApiException {
+        CreateProtectedResourceDto protectedResourceDto = new CreateProtectedResourceDto();
+        protectedResourceDto.setName(key);
+        protectedResourceDto.setDisplayName(key);
+        
+        if (secret != null) {
+            SecretDto secretDto = new SecretDto();
+            secretDto.setType("SharedSecret");
+            secretDto.setValue(secret);
+        }
+
+        resourcesApi.protectedResourcesPost(protectedResourceDto);
+        updateProtectedResourceWithScopes(key, scopes);
+    }
+
+    public void updateProtectedResourceWithScopes(String key, String[] scopes) throws ApiException {
+        if (scopes != null && scopes.length > 0) {
+            ProtectedResourceDto protectedResourceDto = getProtectedResource(key);
+            for (String scope: scopes) {
+                ScopeDto scopeDto = new ScopeDto();
+                scopeDto.setName(scope);
+                scopeDto.setDisplayName(scope);
+                if (!containsScope(protectedResourceDto.getScopes(), scope)) {
+                    resourcesApi.protectedResourcesByIdScopesPost(protectedResourceDto.getId(), scopeDto);
+                }
+                
+                //todo handle existing scope deletion
+            }
+        } else {
+            log.warn("Provided scopes for resource " + key + " is null or empty.");
+        }
+    }
+
+    public void deleteProtectedResourceWithKey(String key) throws ApiException {
+        ProtectedResourceDto protectedResourceDto = getProtectedResource(key);
+        resourcesApi.protectedResourcesByIdDelete(protectedResourceDto.getId());
+    }
 
     private ClientDto getClientByName(String name) throws ApiException {
         ClientDtoRet clientDtos = clientsApi.clientsGet(name);
@@ -122,5 +200,14 @@ public class IS4AdminAPIClient {
         } else {
             throw new ApiException("Client with name " + name + " not found.");
         }
+    }
+    
+    private boolean containsScope(List<ScopeDto> scopeDtoList, String scopeName) {
+        for (ScopeDto aScopeDtoList : scopeDtoList) {
+            if (aScopeDtoList.getName().equals(scopeName)) {
+                return true;
+            }
+        }
+        return false;
     }
 }

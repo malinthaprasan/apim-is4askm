@@ -604,7 +604,23 @@ public class IdentityExpressAsKMImpl extends AbstractKeyManager {
     }
 
     public boolean registerNewResource(API api, Map data) throws APIManagementException {
-        log.info("WARNING : request to register new resource > " + api.getId() + " : " + data);
+        String logPrefix = "[Registering a new protected resource for api:" + api.getId().toString() + "] ";
+        log.debug(logPrefix + " Started");
+        String[] scopes = null;
+        if (api.getScopes() != null && api.getScopes().size() > 0) {
+            scopes = new String[api.getScopes().size()];
+            int i = 0;
+            for (Scope s : api.getScopes()) {
+                scopes[i++] = s.getName();
+            }
+        }
+        try {
+            is4AdminAPIClient.addProtectedResource(api.getId().toString(), api.getId().toString(), scopes);
+        } catch (ApiException e) {
+            handleException(logPrefix + "Error while registering resource " + api.getId().toString() + " with scopes.",
+                    e);
+        }
+        log.debug(logPrefix + " Completed");
         return true;
     }
 
