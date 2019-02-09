@@ -29,6 +29,7 @@ import org.wso2.services.is4.ApiClient;
 import org.wso2.services.is4.ApiException;
 import org.wso2.services.is4.api.ClientsApi;
 import org.wso2.services.is4.model.ClientDto;
+import org.wso2.services.is4.model.ProtectedResourceDto;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -464,13 +465,53 @@ public class IdentityExpressAsKMImpl extends AbstractKeyManager {
         return null;
     }
 
-    public Map getResourceByApiId(String APIId) throws APIManagementException {
-        log.info("WARNING : request to getResourceByApiId > " + APIId);
+    public Map getResourceByApiId(String apiId) throws APIManagementException {
+        String logPrefix = "[Retrieving protected resource for api:" + apiId + "] ";
+        log.debug(logPrefix + "Started");
+        try {
+            ProtectedResourceDto resourceDto = is4AdminAPIClient.getProtectedResource(apiId);
+            if (resourceDto != null) {
+                log.debug(logPrefix + "Found.");
+                Map<String,String> resourceMap = new HashMap<>();
+                resourceMap.put("resourceId", resourceDto.getId());
+                return resourceMap;
+            }
+        } catch (ApiException e) {
+            handleException(logPrefix + "Error while getting resource " + apiId, e);
+        }
+        log.debug(logPrefix + "Not found.");
+        log.debug(logPrefix + "Completed.");
         return null;
     }
 
+    public boolean registerNewResource(API api, Map data) throws APIManagementException {
+        String logPrefix = "[Registering a new protected resource for api:" + api.getId().toString() + "] ";
+        log.debug(logPrefix + "Started");
+        String[] scopes = getScopeArray(api);
+        try {
+            is4AdminAPIClient.addProtectedResource(api.getId().toString(), api.getId().toString(), scopes);
+        } catch (ApiException e) {
+            handleException(logPrefix + "Error while registering resource " + api.getId().toString() + " with scopes.",
+                    e);
+        }
+        log.debug(logPrefix + "Completed");
+        return true;
+    }
+
+    public boolean updateRegisteredResource(API api, Map data) throws APIManagementException {
+        String logPrefix = "[Updating protected resource for api with scopes:" + api.getId().toString() + "] ";
+        log.debug(logPrefix + "Started");
+        try {
+            is4AdminAPIClient.updateProtectedResourceWithScopes(api.getId().toString(), getScopeArray(api));
+        } catch (ApiException e) {
+            handleException(logPrefix + "Error while updating resource " + api.getId().toString(), e);
+        }
+        log.debug(logPrefix + "Completed");
+        return true;
+    }
+
     public Map<String, Set<Scope>> getScopesForAPIS(String apis) throws APIManagementException {
-        log.info("WARNING : request to getScopesForAPIS > " + apis);
+        log.warn("WARNING : request to getScopesForAPIS > " + apis);
         return null;
     }
 
@@ -603,32 +644,6 @@ public class IdentityExpressAsKMImpl extends AbstractKeyManager {
         return oAuthApplicationInfo;
     }
 
-    public boolean registerNewResource(API api, Map data) throws APIManagementException {
-        String logPrefix = "[Registering a new protected resource for api:" + api.getId().toString() + "] ";
-        log.debug(logPrefix + " Started");
-        String[] scopes = null;
-        if (api.getScopes() != null && api.getScopes().size() > 0) {
-            scopes = new String[api.getScopes().size()];
-            int i = 0;
-            for (Scope s : api.getScopes()) {
-                scopes[i++] = s.getName();
-            }
-        }
-        try {
-            is4AdminAPIClient.addProtectedResource(api.getId().toString(), api.getId().toString(), scopes);
-        } catch (ApiException e) {
-            handleException(logPrefix + "Error while registering resource " + api.getId().toString() + " with scopes.",
-                    e);
-        }
-        log.debug(logPrefix + " Completed");
-        return true;
-    }
-
-    public boolean updateRegisteredResource(API api, Map data) throws APIManagementException {
-        log.info("WARNING : request to unregister new resource > " + api.getId() + " : " + data);
-        return true;
-    }
-
     private String generateUUID() {
         return UUID.randomUUID().toString().replace("-", "");
     }
@@ -663,6 +678,18 @@ public class IdentityExpressAsKMImpl extends AbstractKeyManager {
             log.error("Error in connection to Backend API in getClientFromBE", e);
         }
         return null;
+    }
+
+    private String[] getScopeArray(API api) {
+        String[] scopes = null;
+        if (api.getScopes() != null && api.getScopes().size() > 0) {
+            scopes = new String[api.getScopes().size()];
+            int i = 0;
+            for (Scope s : api.getScopes()) {
+                scopes[i++] = s.getName();
+            }
+        }
+        return scopes;
     }
 
 }

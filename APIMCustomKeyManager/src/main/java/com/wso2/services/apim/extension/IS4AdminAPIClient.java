@@ -1,5 +1,6 @@
 package com.wso2.services.apim.extension;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.wso2.services.is4.ApiClient;
@@ -146,9 +147,8 @@ public class IS4AdminAPIClient {
                 throw new ApiException("Resources with name " + key + " found more than once.");
             }
             return resourceList.get(0);
-        } else {
-            throw new ApiException("Resources with name " + key + " not found.");
         }
+        return null;
     }
 
     public void addProtectedResource(String key, String secret, String[] scopes) throws ApiException {
@@ -167,20 +167,50 @@ public class IS4AdminAPIClient {
     }
 
     public void updateProtectedResourceWithScopes(String key, String[] scopes) throws ApiException {
-        if (scopes != null && scopes.length > 0) {
-            ProtectedResourceDto protectedResourceDto = getProtectedResource(key);
-            for (String scope: scopes) {
+        String logPrefix = "[Updating protected resource " + key + " with scopes] ";
+        
+        //if scopes are null, all the scopes of the protected resource except the one with resource name should be 
+        //  deleted. Hence, creating an empty scope array
+        if (scopes == null) {
+            scopes = new String[0];
+        }
+        
+        log.debug(logPrefix + " Retrieving..");
+        ProtectedResourceDto protectedResourceDto = getProtectedResource(key);
+        if (protectedResourceDto != null) {
+            log.debug(logPrefix + " Found..");
+            log.debug(logPrefix + " Checking for new scopes.");
+            for (String scope : scopes) {
                 ScopeDto scopeDto = new ScopeDto();
                 scopeDto.setName(scope);
                 scopeDto.setDisplayName(scope);
                 if (!containsScope(protectedResourceDto.getScopes(), scope)) {
+                    log.debug(logPrefix + " Scope " + scope + " is not added. Hence adding..");
                     resourcesApi.protectedResourcesByIdScopesPost(protectedResourceDto.getId(), scopeDto);
+                    log.debug(logPrefix + " Scope " + scope + " added.");
+                } else {
+                    log.debug(logPrefix + " Scope " + scope + " is already there.");
                 }
-                
-                //todo handle existing scope deletion
             }
+            log.debug(logPrefix + " Checking for new scopes completed.");
+            log.debug(logPrefix + " Checking for deleted scopes.");
+            for (ScopeDto scopeDto : protectedResourceDto.getScopes()) {
+                //Need to skip deleting the scope with protected resource name
+                if (!protectedResourceDto.getName().equals(scopeDto.getName())) {
+                    if (!ArrayUtils.contains(scopes, scopeDto.getName())) {
+                        log.debug(
+                                logPrefix + " Scope " + scopeDto.getName() + " is not required. Hence deleting..");
+                        resourcesApi.protectedResourcesByIdScopesByScopeIdDelete(protectedResourceDto.getId(),
+                                scopeDto.getId());
+                        log.debug(logPrefix + " Scope " + scopeDto.getName() + " deleted.");
+                    } else {
+                        log.debug(logPrefix + " Scope " + scopeDto.getName() + " is already there.");
+                    }
+                }
+            }
+            log.debug(logPrefix + " Checking for deleted completed.");
         } else {
-            log.warn("Provided scopes for resource " + key + " is null or empty.");
+            throw new ApiException("Protected resource with name " + key + " not found.");
         }
     }
 
