@@ -292,23 +292,24 @@ public class IdentityExpressAsKMImpl extends AbstractKeyManager {
         log.debug(logPrefix + "Started");
         try {
             String appName = oAuthApplicationInfo.getClientName();
+            //todo: check with application  sharing
+            String appOwner = (String) oAuthApplicationInfo.getParameter("username");
+
+            List<String> subscribedAPIs = apimClient.getSubscribedAPIIds(appOwner, appName);
+            List<String> scopes = is4AdminAPIClient.getScopeList(subscribedAPIs);
+
             // Create API request
             ClientDto dto = is4AdminAPIClient
                     .addClient(appName, oAuthApplicationInfo.getCallBackURL());
-            
+
             //todo: set grant types from app request
             dto.setAllowedGrantTypes(new ArrayList<String>() {{
                 add("client_credentials");
             }});
 
-            //todo: check with application  sharing
-            String appOwner = (String) oAuthApplicationInfo.getParameter("username");
+            dto.setAllowedScopes(scopes);
+            is4AdminAPIClient.updateClientById(dto.getId(), dto);
 
-            List<String> subscribedAPIs = apimClient.getSubscribedAPIIds(appOwner, appName);
-
-            
-
-            is4AdminAPIClient.updateClientById(dto.getId() + "s", dto);
             ClientDto updatedDto = is4AdminAPIClient.getClientById(dto.getId());
             updatedDto = MappingUtil.setSecrets(dto, updatedDto);
 
@@ -316,7 +317,7 @@ public class IdentityExpressAsKMImpl extends AbstractKeyManager {
             log.debug(logPrefix + "Completed");
             return oAuthApplicationInfo;
         } catch (LinkageError e) { //can execute when dependencies are not added properly
-            handleException(logPrefix + ERR_MESSAGE + " Please make sure " 
+            handleException(logPrefix + ERR_MESSAGE + " Please make sure "
                     + "correct dependencies are added to the runtime", e);
         } catch (ApiException e) {
             handleException(logPrefix + ERR_MESSAGE, e);
@@ -428,7 +429,6 @@ public class IdentityExpressAsKMImpl extends AbstractKeyManager {
                 .add("client_id", accessTokenRequest.getClientId())
                 .add("client_secret", accessTokenRequest.getClientSecret())
                 .add("grant_type", "client_credentials")
-                .add("scope", Constants.IS4_TOKEN_SCOPE_DEFAULT)
                 .build();
 
         Request request = new Request.Builder()

@@ -151,9 +151,17 @@ public class IS4AdminAPIClient {
         return null;
     }
 
-    public List<String> getScopeList(List<String> protectedResourceKeys) {
-        
-        return null;
+    public List<String> getScopeList(List<String> protectedResourceKeys) throws ApiException {
+        List<String> scopeList = new ArrayList<>();
+        for (String resourceKey : protectedResourceKeys) {
+            ProtectedResourceDto protectedResourceDto = getProtectedResource(resourceKey);
+            List<ScopeDto> scopes = protectedResourceDto.getScopes();
+
+            for (ScopeDto scopeDto : scopes) {
+                scopeList.add(scopeDto.getName());
+            }
+        }
+        return scopeList;
     }
 
     public void addProtectedResource(String key, String secret, String[] scopes) throws ApiException {
