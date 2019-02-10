@@ -19,6 +19,9 @@ public class MappingUtil {
     }
 
     public static OAuthApplicationInfo getOAuthAppInfoFromIS4Client(ClientDto dto, OAuthApplicationInfo oAuthAppInfo) {
+        if (dto == null) {
+            return null;
+        }
         String logPrefix = "[Getting OAuth App from IS4 Client" + dto.getClientName() + "] ";
         
         oAuthAppInfo.setClientId(dto.getClientId());
