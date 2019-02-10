@@ -68,11 +68,19 @@ public class APIMClient {
         return identifiers;
     }
 
-    private Map<String, String> getApplicationAttributes(int id) throws APIManagementException {
+    public Map<String, String> getApplicationAttributes(int id) throws APIManagementException {
         try (Connection connection = APIMgtDBUtil.getConnection()) {
             return apiMgtDAO.getApplicationAttributes(connection, id);
         } catch (SQLException e) {
             throw new APIManagementException("Error while getting application attributes for app Id " + id);
         }
+    }
+
+    public Set<String> getConsumerKeysOfApplication(int applicationId) throws APIManagementException{
+        return apiMgtDAO.getConsumerKeysOfApplication(applicationId);
+    }
+
+    public Set<Scope> getAPIScopes(APIIdentifier apiIdentifier) throws APIManagementException{
+        return apiMgtDAO.getAPIScopes(apiIdentifier);
     }
 }

@@ -2,6 +2,7 @@ package com.wso2.services.apim.extension;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.wso2.carbon.apimgt.api.model.APIIdentifier;
 import org.wso2.carbon.apimgt.api.model.ApplicationConstants;
 import org.wso2.carbon.apimgt.api.model.OAuthApplicationInfo;
 import org.wso2.services.is4.model.ClientDto;
@@ -63,6 +64,11 @@ public class MappingUtil {
             }
         }
         return to;
+    }
+
+    public static APIIdentifier getAPIID(String apiName, String apiVersion, String apiProvider){
+        APIIdentifier apiIdentifier = new APIIdentifier(apiProvider, apiName,apiVersion);
+        return apiIdentifier;
     }
     
 }

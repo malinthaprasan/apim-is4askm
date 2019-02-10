@@ -97,6 +97,12 @@ public class IS4AdminAPIClient {
 
         //update secrets
         ClientDto retrievedClient = getClientByName(client.getClientName());
+
+        if(retrievedClient == null){
+            String msg = "Unable to retrieve client information for client name : '" + client.getClientName() + "'";
+            log.error(msg);
+            throw new ApiException(msg);
+        }
         List<SecretDto> secretDtosGet = retrievedClient.getClientSecrets();
         for (int i = 0; i < Math.min(secretDtosGet.size(), secretDtosCreate.size()); i++) {
             secretDtosGet.get(i).setValue(secretDtosCreate.get(i).getValue());
@@ -105,15 +111,13 @@ public class IS4AdminAPIClient {
         return retrievedClient;
     }
 
-    public boolean deleteClientById(String id) throws ApiException {
+    public void deleteClientById(String id) throws ApiException {
         clientsApi.clientsByIdDelete(id);
-        return true;
     }
 
-    public boolean deleteClientByConsumerKey(String ConsumerKey) throws ApiException {
+    public void deleteClientByConsumerKey(String ConsumerKey) throws ApiException {
         ClientDto clientDto = getClientByConsumerKey(ConsumerKey);
         deleteClientById(clientDto.getId());
-        return true;
     }
 
     public ClientDtoRet getAllClients() throws ApiException {
