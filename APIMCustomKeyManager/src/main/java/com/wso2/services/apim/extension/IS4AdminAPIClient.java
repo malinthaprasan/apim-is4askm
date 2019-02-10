@@ -140,23 +140,57 @@ public class IS4AdminAPIClient {
         return clientDto;
     }
 
+    /**
+     * This method returns the protected resources information from the IS4 server, for the given key.
+     * Current implementation uses the APIID(provider_name_version) as the protected resource name(key).
+     *
+     * @param key Protected resource name
+     * @return {@link ProtectedResourceDto} with the information of the protected resource.
+     *
+     * @throws ApiException if any error happens.
+     * */
     public ProtectedResourceDto getProtectedResource(String key) throws ApiException {
+
+        // This is a search. hence there can be responses with partially mapped names.
         ProtectedResourceList resourceList = resourcesApi.protectedResourcesGet(key);
+
+        //Removing the partially mapped resources.
         if (resourceList != null && resourceList.size() > 0) {
-            if (resourceList.size() > 1) {
+            for (ProtectedResourceDto protectedResourceDto : resourceList) {
+                if(key.equals(protectedResourceDto.getName())){
+                    return protectedResourceDto;
+                }
+            }
+            // TODO: remove old code.
+            /*if (resourceList.size() > 1) {
                 throw new ApiException("Resources with name " + key + " found more than once.");
             }
-            return resourceList.get(0);
+            return resourceList.get(0);*/
         }
         return null;
     }
 
+    /**
+     * This method returns the {@link List} of scopes from the IS4 server, for the given list of protected resources names
+     * The current implementation contains uses the APIID((provider_name_version) as the protected resource name(key).
+     *
+     * @param protectedResourceKeys {@link List} of protected resource names to get the scopes
+     * @return {@link List} of the scope names associated with all the protected resources given in the input
+     *
+     * @throws ApiException if any error occurs.
+     * */
     public List<String> getScopeList(List<String> protectedResourceKeys) throws ApiException {
         List<String> scopeList = new ArrayList<>();
         for (String resourceKey : protectedResourceKeys) {
             ProtectedResourceDto protectedResourceDto = getProtectedResource(resourceKey);
+
+            if(protectedResourceDto == null){
+                log.warn("Unable to get the protected resource details for key : " + resourceKey);
+                continue;
+            }
             List<ScopeDto> scopes = protectedResourceDto.getScopes();
 
+            // There will not be any duplicates since both API Manager and IS4 does not allow same name to be reused.
             for (ScopeDto scopeDto : scopes) {
                 scopeList.add(scopeDto.getName());
             }
@@ -164,6 +198,16 @@ public class IS4AdminAPIClient {
         return scopeList;
     }
 
+    /**
+     * This method creates the protected resources in the IS4 server.
+     * The current implementation only supports the use of shared secrets with a protected resource.
+     *
+     * @param key the name of the protected resource.
+     * @param secret the client secret to be associated with the protected resource.
+     * @param scopes the list of scopes to be associated with the protected resource.
+     *
+     * @throws ApiException if error occurs.
+     * */
     public void addProtectedResource(String key, String secret, String[] scopes) throws ApiException {
         CreateProtectedResourceDto protectedResourceDto = new CreateProtectedResourceDto();
         protectedResourceDto.setName(key);
@@ -179,8 +223,17 @@ public class IS4AdminAPIClient {
         updateProtectedResourceWithScopes(key, scopes);
     }
 
+    /**
+     * This method associates the given list of scopes to the given protected resource.
+     * This method will add new scopes as well as remove any scopes that have been removed in API Manager
+     *
+     * @param key the name of the protected resource
+     * @param scopes the list of scopes that needs to be associated with the given protected resource
+     *
+     * @throws ApiException if an error occurs or if the given protected resource is not in IS4
+     * */
     public void updateProtectedResourceWithScopes(String key, String[] scopes) throws ApiException {
-        String logPrefix = "[Updating protected resource " + key + " with scopes] ";
+        String logPrefix = "[Updating protected resource : '" + key + "' with scopes] ";
         
         //if scopes are null, all the scopes of the protected resource except the one with resource name should be 
         //  deleted. Hence, creating an empty scope array
@@ -189,20 +242,24 @@ public class IS4AdminAPIClient {
         }
         
         log.debug(logPrefix + " Retrieving..");
+
         ProtectedResourceDto protectedResourceDto = getProtectedResource(key);
         if (protectedResourceDto != null) {
             log.debug(logPrefix + " Found..");
             log.debug(logPrefix + " Checking for new scopes.");
+
             for (String scope : scopes) {
-                ScopeDto scopeDto = new ScopeDto();
-                scopeDto.setName(scope);
-                scopeDto.setDisplayName(scope);
                 if (!containsScope(protectedResourceDto.getScopes(), scope)) {
-                    log.debug(logPrefix + " Scope " + scope + " is not added. Hence adding..");
+                    log.debug(logPrefix + " Scope : '" + scope + "' is not added. Hence adding..");
+
+                    ScopeDto scopeDto = new ScopeDto();
+                    scopeDto.setName(scope);
+                    scopeDto.setDisplayName(scope);
                     resourcesApi.protectedResourcesByIdScopesPost(protectedResourceDto.getId(), scopeDto);
-                    log.debug(logPrefix + " Scope " + scope + " added.");
+
+                    log.debug(logPrefix + " Scope : '" + scope + "' added.");
                 } else {
-                    log.debug(logPrefix + " Scope " + scope + " is already there.");
+                    log.debug(logPrefix + " Scope : '" + scope + "' is already there.");
                 }
             }
             log.debug(logPrefix + " Checking for new scopes completed.");
@@ -212,34 +269,65 @@ public class IS4AdminAPIClient {
                 if (!protectedResourceDto.getName().equals(scopeDto.getName())) {
                     if (!ArrayUtils.contains(scopes, scopeDto.getName())) {
                         log.debug(
-                                logPrefix + " Scope " + scopeDto.getName() + " is not required. Hence deleting..");
+                                logPrefix + " Scope : '" + scopeDto.getName() + "' is not required. Hence deleting..");
+
+                        // Removing the scope since it was not found.
                         resourcesApi.protectedResourcesByIdScopesByScopeIdDelete(protectedResourceDto.getId(),
                                 scopeDto.getId());
-                        log.debug(logPrefix + " Scope " + scopeDto.getName() + " deleted.");
+
+                        log.debug(logPrefix + " Scope : '" + scopeDto.getName() + "' deleted.");
                     } else {
-                        log.debug(logPrefix + " Scope " + scopeDto.getName() + " is already there.");
+                        log.debug(logPrefix + " Scope : '" + scopeDto.getName() + "' is already present.");
                     }
                 }
             }
             log.debug(logPrefix + " Checking for deleted completed.");
         } else {
-            throw new ApiException("Protected resource with name " + key + " not found.");
+            throw new ApiException("Protected resource with name : '" + key + "' not found.");
         }
     }
 
+    /**
+     * This method removes the protected resource from IS4 server
+     *
+     * @param key the name of the protected resource to be removed.
+     * @throws ApiException if an error occurs.
+     * */
     public void deleteProtectedResourceWithKey(String key) throws ApiException {
         ProtectedResourceDto protectedResourceDto = getProtectedResource(key);
-        resourcesApi.protectedResourcesByIdDelete(protectedResourceDto.getId());
+        if (protectedResourceDto != null) {
+            resourcesApi.protectedResourcesByIdDelete(protectedResourceDto.getId());
+        }else{
+            log.warn("Unable to find the protected resource details for name : '" + key + "'" );
+        }
     }
 
-    private ClientDto getClientByName(String name) throws ApiException {
+
+    /**
+     * This method returns the client information from the IS4 server, for the given name.
+     * Current implementation uses the 'ApplicationName_ConsumerKey' as the client name(name).
+     *
+     * @param name the name of the OAuth client in IS4
+     * @return {@link ClientDto} with the information of the IS4 client
+     *
+     * @throws ApiException if any error happens.
+     * */
+
+    protected ClientDto getClientByName(String name) throws ApiException {
         ClientDtoRet clientDtos = clientsApi.clientsGet(name);
 
         if (clientDtos != null && clientDtos.size() > 0) {
-            if (clientDtos.size() > 1) {
+            for (ClientDto clientDto : clientDtos) {
+                if(name.equals(clientDto.getClientName())){
+                    return clientDto;
+                }
+            }
+            // TODO: remove old code.
+            /*if (clientDtos.size() > 1) {
                 throw new ApiException("Client with name " + name + " found more than once.");
             }
             return clientDtos.get(0);
+            */
         }
         return null;
     }

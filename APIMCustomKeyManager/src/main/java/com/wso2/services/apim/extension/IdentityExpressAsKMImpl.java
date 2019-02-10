@@ -1,10 +1,6 @@
 package com.wso2.services.apim.extension;
 
-import com.squareup.okhttp.FormEncodingBuilder;
-import com.squareup.okhttp.OkHttpClient;
-import com.squareup.okhttp.Request;
-import com.squareup.okhttp.RequestBody;
-import com.squareup.okhttp.Response;
+import com.squareup.okhttp.*;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.logging.Log;
@@ -36,103 +32,21 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.net.URISyntaxException;
+import java.nio.charset.Charset;
 import java.util.*;
 
 public class IdentityExpressAsKMImpl extends AbstractKeyManager {
 
     private static Log log = LogFactory.getLog(IdentityExpressAsKMImpl.class);
     private static final String ERR_MESSAGE = " Error occurred during operation.";
-    
+
     private KeyManagerConfiguration keyManagerConfiguration;
     private IS4AdminAPIClient is4AdminAPIClient;
     private APIMClient apimClient;
-    
+
     public IdentityExpressAsKMImpl() {
         is4AdminAPIClient = new IS4AdminAPIClient();
         apimClient = new APIMClient();
-    }
-
-    public AccessTokenRequest buildAccessTokenRequestFromJSON(String jsonInput, AccessTokenRequest tokenRequest)
-            throws APIManagementException {
-
-        if (jsonInput == null || jsonInput.isEmpty()) {
-            log.debug("JsonInput is null or Empty.");
-            return tokenRequest;
-        }
-
-        JSONParser parser = new JSONParser();
-        JSONObject jsonObject;
-
-        if (tokenRequest == null) {
-            log.debug("Input request is null. Creating a new Request Object.");
-            tokenRequest = new AccessTokenRequest();
-        }
-
-        try {
-            jsonObject = (JSONObject) parser.parse(jsonInput);
-            // Getting parameters from input string and setting in TokenRequest.
-            if (jsonObject != null && !jsonObject.isEmpty()) {
-                Map<String, Object> params = (Map<String, Object>) jsonObject;
-
-                if (null != params.get(ApplicationConstants.OAUTH_CLIENT_ID)) {
-                    tokenRequest.setClientId((String) params.get(ApplicationConstants.OAUTH_CLIENT_ID));
-                }
-
-                if (null != params.get(ApplicationConstants.OAUTH_CLIENT_SECRET)) {
-                    tokenRequest.setClientSecret((String) params.get(ApplicationConstants.OAUTH_CLIENT_SECRET));
-                }
-
-                if (null != params.get(ApplicationConstants.VALIDITY_PERIOD)) {
-                    tokenRequest.setValidityPeriod(
-                            Long.parseLong((String) params.get(ApplicationConstants.VALIDITY_PERIOD)));
-                }
-
-                return tokenRequest;
-            }
-        } catch (ParseException e) {
-            handleException("Error occurred while parsing JSON String", e);
-        }
-        return null;
-    }
-
-    /**
-     * This method will accept json String and will do the json parse will set oAuth
-     * application properties to OAuthApplicationInfo object.
-     *
-     * @param jsonInput
-     *            this jsonInput will contain set of oAuth application properties.
-     * @return OAuthApplicationInfo object will be return.
-     * @throws APIManagementException
-     */
-    public OAuthApplicationInfo buildFromJSON(OAuthApplicationInfo oAuthApplicationInfo, String jsonInput)
-            throws APIManagementException {
-        // initiate json parser.
-        JSONParser parser = new JSONParser();
-        JSONObject jsonObject;
-
-        try {
-            // parse json String
-            jsonObject = (JSONObject) parser.parse(jsonInput);
-            if (jsonObject != null) {
-                // create a map to hold json parsed objects.
-                Map<String, Object> params = (Map) jsonObject;
-
-                // set client Id
-                if (params.get(Constants.JSON_CLIENT_ID) != null) {
-                    oAuthApplicationInfo.setClientId((String) params.get(Constants.JSON_CLIENT_ID));
-                }
-                // set client secret
-                if (params.get(Constants.JSON_CLIENT_SECRET) != null) {
-                    oAuthApplicationInfo.setClientSecret((String) params.get(Constants.JSON_CLIENT_SECRET));
-                }
-                // copy all params map in to OAuthApplicationInfo's Map object.
-                oAuthApplicationInfo.putAll(params);
-                return oAuthApplicationInfo;
-            }
-        } catch (ParseException e) {
-            handleException("Error occurred while parsing JSON String", e);
-        }
-        return null;
     }
 
     public AccessTokenRequest buildAccessTokenRequestFromOAuthApp(OAuthApplicationInfo oAuthApplication,
@@ -209,76 +123,7 @@ public class IdentityExpressAsKMImpl extends AbstractKeyManager {
         return parsedObject;
     }
 
-    private String createJsonPayloadFromOauthApplication(OAuthApplicationInfo oAuthApplicationInfo)
-            throws APIManagementException {
 
-        Map<String, Object> paramMap = new HashMap<String, Object>();
-
-        log.debug("Creating JSON with DCR Details -------- ");
-        log.debug("Client Name : " + oAuthApplicationInfo.getClientName());
-        log.debug(Constants.CLIENT_CONTACT_NAME + " : " + oAuthApplicationInfo.getParameter(Constants.CLIENT_CONTACT_NAME));
-        log.debug(Constants.CLIENT_SCOPE + " : " + oAuthApplicationInfo.getParameter(Constants.CLIENT_SCOPE));
-        log.debug(Constants.CLIENT_CONTACT_EMAIL + " : " + oAuthApplicationInfo.getParameter(Constants.CLIENT_CONTACT_EMAIL));
-
-        // TODO Update this according to the IS4 requirements
-		/*if (oAuthApplicationInfo.getClientName() == null
-				|| oAuthApplicationInfo.getParameter(Constants.CLIENT_CONTACT_NAME) == null
-				|| oAuthApplicationInfo.getParameter(Constants.CLIENT_SCOPE) == null
-				|| oAuthApplicationInfo.getParameter(Constants.CLIENT_CONTACT_EMAIL) == null) {
-			throw new APIManagementException("Mandatory parameters missing");
-		}*/
-
-        paramMap.put(Constants.CLIENT_NAME, oAuthApplicationInfo.getClientName());
-
-        JSONArray scopes = (JSONArray) oAuthApplicationInfo.getParameter(Constants.CLIENT_SCOPE);
-        paramMap.put("scopes", scopes);
-
-        paramMap.put(Constants.CLIENT_CONTACT_NAME, oAuthApplicationInfo.getParameter(Constants.CLIENT_CONTACT_NAME));
-        paramMap.put(Constants.CLIENT_CONTACT_EMAIL, oAuthApplicationInfo.getParameter(Constants.CLIENT_CONTACT_EMAIL));
-        if (oAuthApplicationInfo.getParameter("id") != null) {
-            paramMap.put("id", oAuthApplicationInfo.getParameter("id"));
-        }
-
-        return JSONObject.toJSONString(paramMap);
-    }
-
-    private OAuthApplicationInfo createOAuthAppfromResponse(Map responseMap) {
-
-        // Sample response returned by client registration endpoint.
-        // {"id":305,"creationDate":1430486098086,"modificationDate":1430486098086,"name":"TestClient_2",
-        // "clientId":"testclient_2","secret":"3b4dbfb6-0ad9-403e-8ed6-715459fc8c78",
-        // "description":null,"contactName":"John Doe","contactEmail":"john@doe.com",
-        // "scopes":["scope1"],"attributes":{},"thumbNailUrl":null,"redirectUris":[],
-        // "skipConsent":false,"includePrincipal":false,"expireDuration":0,"useRefreshTokens":false,
-        // "allowedImplicitGrant":false,"allowedClientCredentials":false}
-
-        OAuthApplicationInfo info = new OAuthApplicationInfo();
-        Object clientId = responseMap.get(Constants.CLIENT_ID);
-        info.setClientId((String) clientId);
-
-        Object clientSecret = responseMap.get(Constants.CLIENT_SECRET);
-        info.setClientSecret((String) clientSecret);
-
-        Object id = responseMap.get("id");
-        info.addParameter("id", id);
-
-        Object contactName = responseMap.get(Constants.CLIENT_CONTACT_NAME);
-        if (contactName != null) {
-            info.addParameter("contactName", contactName);
-        }
-
-        Object contactMail = responseMap.get(Constants.CLIENT_CONTACT_EMAIL);
-        if (contactMail != null) {
-            info.addParameter("contactMail", contactMail);
-        }
-
-        Object scopes = responseMap.get(Constants.CLIENT_SCOPE);
-        if (scopes != null) {
-            info.addParameter("scopes", scopes);
-        }
-
-        return info;
-    }
 
     public OAuthApplicationInfo buildFromJSON(String json) throws APIManagementException {
         return null;
@@ -295,8 +140,8 @@ public class IdentityExpressAsKMImpl extends AbstractKeyManager {
             //todo: check with application  sharing
             String appOwner = (String) oAuthApplicationInfo.getParameter("username");
 
-            List<String> subscribedAPIs = apimClient.getSubscribedAPIIds(appOwner, appName);
-            List<String> scopes = is4AdminAPIClient.getScopeList(subscribedAPIs);
+            List<String> subscribedAPIIds = apimClient.getSubscribedAPIIds(appOwner, appName);
+            List<String> scopes = is4AdminAPIClient.getScopeList(subscribedAPIIds);
 
             // Create API request
             ClientDto dto = is4AdminAPIClient
@@ -311,7 +156,7 @@ public class IdentityExpressAsKMImpl extends AbstractKeyManager {
             is4AdminAPIClient.updateClientById(dto.getId(), dto);
 
             ClientDto updatedDto = is4AdminAPIClient.getClientById(dto.getId());
-            updatedDto = MappingUtil.setSecrets(dto, updatedDto);
+            MappingUtil.setSecrets(dto, updatedDto);
 
             oAuthApplicationInfo = MappingUtil.getOAuthAppInfoFromIS4Client(updatedDto, oAuthApplicationInfo);
             log.debug(logPrefix + "Completed");
@@ -341,7 +186,7 @@ public class IdentityExpressAsKMImpl extends AbstractKeyManager {
 
         // Getting Client Registration url and Access Token from config.
         String registrationEndpoint = config.getParameter(Constants.CLIENT_REG_ENDPOINT);
-        String registrationToken = config.getParameter(Constants.REGISTRAION_ACCESS_TOKEN);
+//        String registrationToken = config.getParameter(Constants.REGISTRAION_ACCESS_TOKEN);
 
         try {
             // Generate UUIDs as Client Id and Secret
@@ -422,7 +267,7 @@ public class IdentityExpressAsKMImpl extends AbstractKeyManager {
 
     public AccessTokenInfo getNewApplicationAccessToken(AccessTokenRequest accessTokenRequest) throws APIManagementException {
         String logPrefix = "[Getting new access token for App:" + accessTokenRequest.getClientId() + "] ";
-        
+
         OkHttpClient client = new OkHttpClient();
 
         RequestBody formEncoding = new FormEncodingBuilder()
@@ -474,7 +319,7 @@ public class IdentityExpressAsKMImpl extends AbstractKeyManager {
             ProtectedResourceDto resourceDto = is4AdminAPIClient.getProtectedResource(apiId);
             if (resourceDto != null) {
                 log.debug(logPrefix + "Found.");
-                Map<String,String> resourceMap = new HashMap<>();
+                Map<String, String> resourceMap = new HashMap<>();
                 resourceMap.put("resourceId", resourceDto.getId());
                 return resourceMap;
             }
@@ -526,7 +371,8 @@ public class IdentityExpressAsKMImpl extends AbstractKeyManager {
         String introspectionConsumerKey = config.getParameter(Constants.INTROSPECTION_CK);
         String introspectionConsumerSecret = config.getParameter(Constants.INTROSPECTION_CS);
         String encodedSecret = new String(Base64.getEncoder()
-                .encode(new String(introspectionConsumerKey + ":" + introspectionConsumerSecret).getBytes()));
+                .encode((introspectionConsumerKey + ":" + introspectionConsumerSecret)
+                                .getBytes(Charset.defaultCharset())), Charset.defaultCharset());
 
         BufferedReader reader = null;
         CloseableHttpClient client = getCloseableHttpClient();
@@ -557,8 +403,7 @@ public class IdentityExpressAsKMImpl extends AbstractKeyManager {
                 parsedObject = getParsedObjectByReader(reader);
                 if (parsedObject != null) {
 
-                    Map valueMap = parsedObject;
-                    Object principal = valueMap.get("principal");
+                    Object principal = ((Map) parsedObject).get("principal");
 
                     if (principal == null) {
                         tokenInfo.setTokenValid(false);
@@ -566,7 +411,7 @@ public class IdentityExpressAsKMImpl extends AbstractKeyManager {
                     }
                     Map principalMap = (Map) principal;
                     String clientId = (String) principalMap.get("name");
-                    Long expiryTimeString = (Long) valueMap.get("expires_in");
+                    Long expiryTimeString = (Long) ((Map) parsedObject).get("expires_in");
 
                     // Returning false if mandatory attributes are missing.
                     if (clientId == null || expiryTimeString == null) {
@@ -583,7 +428,7 @@ public class IdentityExpressAsKMImpl extends AbstractKeyManager {
                         tokenInfo.setValidityPeriod(expiryTime - currentTime);
                         // Considering Current Time as the issued time.
                         tokenInfo.setIssuedTime(currentTime);
-                        JSONArray scopesArray = (JSONArray) valueMap.get("scopes");
+                        JSONArray scopesArray = (JSONArray) ((Map) parsedObject).get("scopes");
 
                         if (scopesArray != null && !scopesArray.isEmpty()) {
 
@@ -642,8 +487,7 @@ public class IdentityExpressAsKMImpl extends AbstractKeyManager {
     }
 
     public OAuthApplicationInfo mapOAuthApplication(OAuthAppRequest oAuthAppRequest) throws APIManagementException {
-        OAuthApplicationInfo oAuthApplicationInfo = oAuthAppRequest.getOAuthApplicationInfo();
-        return oAuthApplicationInfo;
+        return oAuthAppRequest.getOAuthApplicationInfo();
     }
 
     private String generateUUID() {
@@ -674,7 +518,7 @@ public class IdentityExpressAsKMImpl extends AbstractKeyManager {
 
             // TODO update the client dto object
 
-            log.debug("Retriving Client From BE successful");
+            log.debug("Retrieving Client From BE successful");
             return clientDto;
         } catch (Exception e) {
             log.error("Error in connection to Backend API in getClientFromBE", e);
