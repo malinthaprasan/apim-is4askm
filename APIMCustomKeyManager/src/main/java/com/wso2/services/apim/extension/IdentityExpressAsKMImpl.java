@@ -45,11 +45,11 @@ public class IdentityExpressAsKMImpl extends AbstractKeyManager {
     
     private KeyManagerConfiguration keyManagerConfiguration;
     private IS4AdminAPIClient is4AdminAPIClient;
-//    private APIMClient apimClient;
+    private APIMClient apimClient;
     
     public IdentityExpressAsKMImpl() {
         is4AdminAPIClient = new IS4AdminAPIClient();
-//        apimClient = new APIMClient();
+        apimClient = new APIMClient();
     }
 
     public AccessTokenRequest buildAccessTokenRequestFromJSON(String jsonInput, AccessTokenRequest tokenRequest)
@@ -291,22 +291,24 @@ public class IdentityExpressAsKMImpl extends AbstractKeyManager {
         OAuthApplicationInfo oAuthApplicationInfo = oauthAppRequest.getOAuthApplicationInfo();
         log.debug(logPrefix + "Started");
         try {
+            String appName = oAuthApplicationInfo.getClientName();
             // Create API request
             ClientDto dto = is4AdminAPIClient
-                    .addClient(oAuthApplicationInfo.getClientName(), oAuthApplicationInfo.getCallBackURL());
+                    .addClient(appName, oAuthApplicationInfo.getCallBackURL());
             
             //todo: set grant types from app request
             dto.setAllowedGrantTypes(new ArrayList<String>() {{
                 add("client_credentials");
             }});
 
-            //todo: Need to add a scope to the app otherwise token generation is not allowed. 
-            // Need to check and fix properly.
-            dto.setAllowedScopes(new ArrayList<String>() {{
-                add(Constants.IS4_TOKEN_SCOPE_DEFAULT);
-            }});
+            //todo: check with application  sharing
+            String appOwner = (String) oAuthApplicationInfo.getParameter("username");
 
-            is4AdminAPIClient.updateClientById(dto.getId(), dto);
+            List<String> subscribedAPIs = apimClient.getSubscribedAPIIds(appOwner, appName);
+
+            
+
+            is4AdminAPIClient.updateClientById(dto.getId() + "s", dto);
             ClientDto updatedDto = is4AdminAPIClient.getClientById(dto.getId());
             updatedDto = MappingUtil.setSecrets(dto, updatedDto);
 

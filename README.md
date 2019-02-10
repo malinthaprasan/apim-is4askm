@@ -41,16 +41,23 @@ ${m2-repo-home}/com/squareup/okio/okio/1.6.0/okio-1.6.0.jar
 ${m2-repo-home}/org/threeten/threetenbp/1.3.5/threetenbp-1.3.5.jar
 ```
 
-### Configurations in IS4
+4. Configure the workflow extensions in workflow-extensions.xml from API Manager carbon console.
 
-* Login via Admin API and select `Resources` -> `Protected Resources`.
-* Click `Add` and specify the `Id` as "api_gw" and `Display Name` API Manager GW.
+![alt text](images/workflow-extension.jpg)
 
-![alt text](images/add_resource.jpg)
+Comment out the `<ProductionApplicationRegistration>` and `<SandboxApplicationRegistration>` elements and add below.
 
-* Finally the resource would look like below
-
-![alt text](images/final_add_resource.jpg)
+```xml
+<WorkFlowExtensions>
+...
+    <!--ProductionApplicationRegistration executor="org.wso2.carbon.apimgt.impl.workflow.ApplicationRegistrationSimpleWorkflowExecutor"/-->
+    <ProductionApplicationRegistration executor="com.wso2.services.apim.extension.workflow.IS4ApplicationRegistrationWorkflow"/>
+    
+    <!--SandboxApplicationRegistration executor="org.wso2.carbon.apimgt.impl.workflow.ApplicationRegistrationSimpleWorkflowExecutor"/-->
+    <SandboxApplicationRegistration executor="com.wso2.services.apim.extension.workflow.IS4ApplicationRegistrationWorkflow"/>
+...
+</WorkFlowExtensions>
+```
 
 ## Troubleshooting
 

@@ -151,6 +151,11 @@ public class IS4AdminAPIClient {
         return null;
     }
 
+    public List<String> getScopeList(List<String> protectedResourceKeys) {
+        
+        return null;
+    }
+
     public void addProtectedResource(String key, String secret, String[] scopes) throws ApiException {
         CreateProtectedResourceDto protectedResourceDto = new CreateProtectedResourceDto();
         protectedResourceDto.setName(key);
@@ -227,9 +232,8 @@ public class IS4AdminAPIClient {
                 throw new ApiException("Client with name " + name + " found more than once.");
             }
             return clientDtos.get(0);
-        } else {
-            throw new ApiException("Client with name " + name + " not found.");
         }
+        return null;
     }
     
     private boolean containsScope(List<ScopeDto> scopeDtoList, String scopeName) {
