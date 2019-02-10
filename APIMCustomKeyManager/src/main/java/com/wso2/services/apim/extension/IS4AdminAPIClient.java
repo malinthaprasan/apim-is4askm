@@ -216,15 +216,18 @@ public class IS4AdminAPIClient {
         CreateProtectedResourceDto protectedResourceDto = new CreateProtectedResourceDto();
         protectedResourceDto.setName(key);
         protectedResourceDto.setDisplayName(key);
-        
-        if (secret != null) {
-            SecretDto secretDto = new SecretDto();
-            secretDto.setType("SharedSecret");
-            secretDto.setValue(secret);
-        }
 
         resourcesApi.protectedResourcesPost(protectedResourceDto);
-        updateProtectedResourceWithScopes(key, scopes);
+
+        ProtectedResourceDto addedResource = getProtectedResource(key);
+        updateProtectedResourceWithScopes(addedResource, scopes);
+
+        if (secret != null) {
+            CreateSecretDto secretDto = new CreateSecretDto();
+            secretDto.setType("SharedSecret");
+            secretDto.setValue(secret);
+            resourcesApi.protectedResourcesByIdSecretsPost(addedResource.getId(), secretDto);
+        }
     }
 
     /**
@@ -237,7 +240,12 @@ public class IS4AdminAPIClient {
      * @throws ApiException if an error occurs or if the given protected resource is not in IS4
      * */
     public void updateProtectedResourceWithScopes(String key, String[] scopes) throws ApiException {
-        String logPrefix = "[Updating protected resource : '" + key + "' with scopes] ";
+        ProtectedResourceDto protectedResourceDto = getProtectedResource(key);
+        updateProtectedResourceWithScopes(protectedResourceDto, scopes);
+    }
+
+    public void updateProtectedResourceWithScopes(ProtectedResourceDto protectedResourceDto, String[] scopes) throws ApiException {
+        String logPrefix = "[Updating protected resource : '" + protectedResourceDto.getName() + "' with scopes] ";
         
         //if scopes are null, all the scopes of the protected resource except the one with resource name should be 
         //  deleted. Hence, creating an empty scope array
@@ -246,8 +254,6 @@ public class IS4AdminAPIClient {
         }
         
         log.debug(logPrefix + " Retrieving..");
-
-        ProtectedResourceDto protectedResourceDto = getProtectedResource(key);
         if (protectedResourceDto != null) {
             log.debug(logPrefix + " Found..");
             log.debug(logPrefix + " Checking for new scopes.");
@@ -287,7 +293,7 @@ public class IS4AdminAPIClient {
             }
             log.debug(logPrefix + " Checking for deleted completed.");
         } else {
-            throw new ApiException("Protected resource with name : '" + key + "' not found.");
+            throw new ApiException("Protected resource with name : '" +  protectedResourceDto.getName() + "' not found.");
         }
     }
 
