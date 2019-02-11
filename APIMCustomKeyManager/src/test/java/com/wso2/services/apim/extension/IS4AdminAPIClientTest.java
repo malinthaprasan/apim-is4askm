@@ -8,7 +8,6 @@ import com.squareup.okhttp.Response;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.junit.Test;
-import org.wso2.carbon.apimgt.api.model.xsd.Scope;
 import org.wso2.services.is4.ApiException;
 import org.wso2.services.is4.model.ClientDto;
 import org.wso2.services.is4.model.ClientDtoRet;
@@ -37,6 +36,8 @@ public class IS4AdminAPIClientTest {
 
     public IS4AdminAPIClientTest() throws ApiException {
         api = new IS4AdminAPIClient();
+        api.init(new IS4TokenAPIClient(), "admin_ui_sample", "admin_ui_sample", "info@rocksolidknowledge.com",
+                "Password123!");
         cleanup();
     }
 
@@ -49,8 +50,10 @@ public class IS4AdminAPIClientTest {
                 break;
             }
         }
-        
-        api.deleteProtectedResourceWithKey(PROTECTED_RESOURCE_KEY);
+
+        if (api.getProtectedResource(PROTECTED_RESOURCE_KEY) != null) {
+            api.deleteProtectedResourceWithKey(PROTECTED_RESOURCE_KEY);
+        }
     }
 
     @Test

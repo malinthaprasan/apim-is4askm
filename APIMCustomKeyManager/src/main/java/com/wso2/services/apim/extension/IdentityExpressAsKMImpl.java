@@ -1,6 +1,7 @@
 package com.wso2.services.apim.extension;
 
 import com.squareup.okhttp.*;
+import com.wso2.services.apim.extension.exception.TokenAPIException;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.logging.Log;
@@ -12,6 +13,7 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.solr.common.StringUtils;
 import org.json.JSONException;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -43,10 +45,12 @@ public class IdentityExpressAsKMImpl extends AbstractKeyManager {
     private KeyManagerConfiguration keyManagerConfiguration;
     private IS4AdminAPIClient is4AdminAPIClient;
     private APIMClient apimClient;
+    private IS4TokenAPIClient tokenAPIClient;
 
     public IdentityExpressAsKMImpl() {
         is4AdminAPIClient = new IS4AdminAPIClient();
         apimClient = new APIMClient();
+        tokenAPIClient = new IS4TokenAPIClient();
     }
 
     public AccessTokenRequest buildAccessTokenRequestFromOAuthApp(OAuthApplicationInfo oAuthApplication,
@@ -265,45 +269,28 @@ public class IdentityExpressAsKMImpl extends AbstractKeyManager {
         return keyManagerConfiguration;
     }
 
-    public AccessTokenInfo getNewApplicationAccessToken(AccessTokenRequest accessTokenRequest) throws APIManagementException {
+    public AccessTokenInfo getNewApplicationAccessToken(AccessTokenRequest accessTokenRequest)
+            throws APIManagementException {
         String logPrefix = "[Getting new access token for App:" + accessTokenRequest.getClientId() + "] ";
-
-        OkHttpClient client = new OkHttpClient();
-
-        RequestBody formEncoding = new FormEncodingBuilder()
-                .add("client_id", accessTokenRequest.getClientId())
-                .add("client_secret", accessTokenRequest.getClientSecret())
-                .add("grant_type", "client_credentials")
-                .build();
-
-        Request request = new Request.Builder()
-                .url(Constants.IS4_TOKEN_API_URL_DEFAULT)
-                .post(formEncoding)
-                .build();
-
-        Response response;
+        log.debug(logPrefix + "Started");
         AccessTokenInfo tokenInfo = new AccessTokenInfo();
         try {
-            response = client.newCall(request).execute();
-
-            String accessTokenResponse = response.body().string();
-            log.debug(logPrefix + "Response: " + accessTokenResponse);
-
-            org.json.JSONObject obj = new org.json.JSONObject(accessTokenResponse);
-            String accessToken = obj.get(Constants.OAUTH_RESPONSE_ACCESSTOKEN).toString();
-            Long validityPeriod = Long.parseLong(obj.get(Constants.OAUTH_RESPONSE_EXPIRY_TIME).toString());
-            if (obj.has("scope")) {
-                tokenInfo.setScope(((String) obj.get("scope")).split(" "));
+            JSONObject tokenResponse = tokenAPIClient
+                    .getNewAccessTokenWithClientCredentials(accessTokenRequest.getClientId(),
+                            accessTokenRequest.getClientSecret());
+            String accessToken = tokenResponse.get(Constants.OAUTH_RESPONSE_ACCESSTOKEN).toString();
+            Long validityPeriod = Long.parseLong(tokenResponse.get(Constants.OAUTH_RESPONSE_EXPIRY_TIME).toString());
+            if (tokenResponse.get("scope") != null) {
+                tokenInfo.setScope(((String) tokenResponse.get("scope")).split(" "));
             }
             tokenInfo.setAccessToken(accessToken);
             tokenInfo.setValidityPeriod(validityPeriod);
             tokenInfo.setConsumerKey(accessTokenRequest.getClientId());
             tokenInfo.setTokenValid(true);
-        } catch (IOException e) {
-            handleException("Error while creating tokens - " + e.getMessage(), e);
-        } catch (JSONException e) {
+        } catch (TokenAPIException e) {
             handleException("Error while parsing response from token api", e);
         }
+        log.debug(logPrefix + "Completed");
         return tokenInfo;
     }
 
@@ -484,6 +471,25 @@ public class IdentityExpressAsKMImpl extends AbstractKeyManager {
     public void loadConfiguration(KeyManagerConfiguration keyManagerConfiguration) throws APIManagementException {
         log.debug("loadConfiguration executed with : " + keyManagerConfiguration);
         this.keyManagerConfiguration = keyManagerConfiguration;
+
+        String tokenAPIUrl = keyManagerConfiguration.getParameter(Constants.IS4_IS4_TOKEN_API_URL);
+        if (!StringUtils.isEmpty(tokenAPIUrl)) {
+            tokenAPIClient.setTokenAPIUrl(tokenAPIUrl);
+        }
+        
+        is4AdminAPIClient.init(
+                tokenAPIClient,
+                keyManagerConfiguration.getParameter(Constants.IS4_CLIENT_ID),
+                keyManagerConfiguration.getParameter(Constants.IS4_CLIENT_SECRET),
+                keyManagerConfiguration.getParameter(Constants.IS4_USERNAME),
+                keyManagerConfiguration.getParameter(Constants.IS4_PASSWORD)
+        );
+        
+        String adminAPIUrl = keyManagerConfiguration.getParameter(Constants.IS4_ADMIN_API_BASE_PATH);
+        
+        if (!StringUtils.isEmpty(adminAPIUrl)) {
+            is4AdminAPIClient.setBasePath(adminAPIUrl);
+        }
     }
 
     public OAuthApplicationInfo mapOAuthApplication(OAuthAppRequest oAuthAppRequest) throws APIManagementException {
@@ -537,5 +543,4 @@ public class IdentityExpressAsKMImpl extends AbstractKeyManager {
         }
         return scopes;
     }
-
 }
