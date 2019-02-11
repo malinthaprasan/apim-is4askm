@@ -55,7 +55,7 @@ public class IS4SubscriptionDeletionWorkflow extends SubscriptionDeletionSimpleW
         if (protectedResourceDto == null) {
             // This means that the protected resource is missing in IS4.
             // Flow cannot continue.
-            String msg = "Unable to create protected resource : '" + apiId + "' in IS4";
+            String msg = "Unable to delete protected resource : '" + apiId + "' in IS4";
             throw new WorkflowException(msg);
         } else {
             // This means that the protected resource is created in IS4.

@@ -38,6 +38,7 @@ import java.nio.charset.Charset;
 import java.util.*;
 
 public class IdentityExpressAsKMImpl extends AbstractKeyManager {
+    public static final String DEFAULT_SCOPE = "wso2_apim_default_scope";
 
     private static Log log = LogFactory.getLog(IdentityExpressAsKMImpl.class);
     private static final String ERR_MESSAGE = " Error occurred during operation.";
@@ -54,7 +55,7 @@ public class IdentityExpressAsKMImpl extends AbstractKeyManager {
     }
 
     public AccessTokenRequest buildAccessTokenRequestFromOAuthApp(OAuthApplicationInfo oAuthApplication,
-            AccessTokenRequest tokenRequest) throws APIManagementException {
+                                                                  AccessTokenRequest tokenRequest) throws APIManagementException {
         if (oAuthApplication == null) {
             return tokenRequest;
         }
@@ -91,7 +92,8 @@ public class IdentityExpressAsKMImpl extends AbstractKeyManager {
             }
         } else {
             String[] tokenScopes = new String[1];
-            tokenScopes[0] = Constants.IS4_TOKEN_SCOPE_DEFAULT;;
+            tokenScopes[0] = Constants.IS4_TOKEN_SCOPE_DEFAULT;
+            ;
             tokenRequest.setScope(tokenScopes);
         }
 
@@ -128,7 +130,6 @@ public class IdentityExpressAsKMImpl extends AbstractKeyManager {
     }
 
 
-
     public OAuthApplicationInfo buildFromJSON(String json) throws APIManagementException {
         return null;
     }
@@ -146,6 +147,16 @@ public class IdentityExpressAsKMImpl extends AbstractKeyManager {
 
             List<String> subscribedAPIIds = apimClient.getSubscribedAPIIds(appOwner, appName);
             List<String> scopes = is4AdminAPIClient.getScopeList(subscribedAPIIds);
+
+            if (scopes.isEmpty()) {
+                // This is an error condition in IS4 where it cannot issue an token for an empty scope.
+                // Check whether the default scope exists in IS4
+                List<String> existingScopes = is4AdminAPIClient.getScopeList(Collections.singletonList(DEFAULT_SCOPE));
+                if (existingScopes.isEmpty() || !existingScopes.contains(DEFAULT_SCOPE)) {
+                    is4AdminAPIClient.addProtectedResource(DEFAULT_SCOPE, DEFAULT_SCOPE, new String[]{DEFAULT_SCOPE});
+                }
+                scopes.add(DEFAULT_SCOPE);
+            }
 
             // Create API request
             ClientDto dto = is4AdminAPIClient
@@ -359,7 +370,7 @@ public class IdentityExpressAsKMImpl extends AbstractKeyManager {
         String introspectionConsumerSecret = config.getParameter(Constants.INTROSPECTION_CS);
         String encodedSecret = new String(Base64.getEncoder()
                 .encode((introspectionConsumerKey + ":" + introspectionConsumerSecret)
-                                .getBytes(Charset.defaultCharset())), Charset.defaultCharset());
+                        .getBytes(Charset.defaultCharset())), Charset.defaultCharset());
 
         BufferedReader reader = null;
         CloseableHttpClient client = getCloseableHttpClient();
@@ -476,7 +487,7 @@ public class IdentityExpressAsKMImpl extends AbstractKeyManager {
         if (!StringUtils.isEmpty(tokenAPIUrl)) {
             tokenAPIClient.setTokenAPIUrl(tokenAPIUrl);
         }
-        
+
         is4AdminAPIClient.init(
                 tokenAPIClient,
                 keyManagerConfiguration.getParameter(Constants.IS4_CLIENT_ID),
@@ -484,9 +495,9 @@ public class IdentityExpressAsKMImpl extends AbstractKeyManager {
                 keyManagerConfiguration.getParameter(Constants.IS4_USERNAME),
                 keyManagerConfiguration.getParameter(Constants.IS4_PASSWORD)
         );
-        
+
         String adminAPIUrl = keyManagerConfiguration.getParameter(Constants.IS4_ADMIN_API_BASE_PATH);
-        
+
         if (!StringUtils.isEmpty(adminAPIUrl)) {
             is4AdminAPIClient.setBasePath(adminAPIUrl);
         }

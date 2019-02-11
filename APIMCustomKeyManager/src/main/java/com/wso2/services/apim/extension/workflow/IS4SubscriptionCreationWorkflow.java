@@ -87,7 +87,17 @@ public class IS4SubscriptionCreationWorkflow extends SubscriptionCreationSimpleW
         }
 
         // Get the application id and the corresponding client information from IS4
-        int applicationId = subscriptionWorkflowDTO.getApplicationId();
+        //int applicationId = subscriptionWorkflowDTO.getApplicationId();
+
+        //Todo: Fix properly with WUM
+        int applicationId = 0;
+
+        try {
+            applicationId = apimClient.getApplicationId(subscriptionWorkflowDTO.getApplicationName(),
+                    subscriptionWorkflowDTO.getSubscriber());
+        } catch (APIManagementException e) {
+            throw new WorkflowException("Unable to get application details");
+        }
 
         Set<String> consumerKeys;
         try {

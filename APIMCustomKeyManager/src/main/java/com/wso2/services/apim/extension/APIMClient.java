@@ -24,9 +24,9 @@ public class APIMClient {
 
     protected ApiMgtDAO apiMgtDAO;
     private static Log log = LogFactory.getLog(IdentityExpressAsKMImpl.class);
-    
+
     public APIMClient() {
-        apiMgtDAO = ApiMgtDAO.getInstance();    
+        apiMgtDAO = ApiMgtDAO.getInstance();
     }
 
     public String getIS4AppIdFromConsumerKey(String consumerKey) throws APIManagementException {
@@ -45,7 +45,7 @@ public class APIMClient {
         } else {
             throw new APIManagementException("Cannot find APIM Application Id from consumer key " + consumerKey);
         }
-        
+
     }
 
     public List<String> getSubscribedAPIIds(String username, String applicationName) throws APIManagementException {
@@ -76,11 +76,15 @@ public class APIMClient {
         }
     }
 
-    public Set<String> getConsumerKeysOfApplication(int applicationId) throws APIManagementException{
+    public Set<String> getConsumerKeysOfApplication(int applicationId) throws APIManagementException {
         return apiMgtDAO.getConsumerKeysOfApplication(applicationId);
     }
 
-    public Set<Scope> getAPIScopes(APIIdentifier apiIdentifier) throws APIManagementException{
+    public Set<Scope> getAPIScopes(APIIdentifier apiIdentifier) throws APIManagementException {
         return apiMgtDAO.getAPIScopes(apiIdentifier);
+    }
+
+    public int getApplicationId(String applicationName, String username) throws APIManagementException {
+        return apiMgtDAO.getApplicationId(applicationName, username);
     }
 }
