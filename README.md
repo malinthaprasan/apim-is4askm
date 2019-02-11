@@ -12,11 +12,12 @@
     <APIKeyManager>
         <KeyManagerClientImpl>com.wso2.services.apim.extension.IdentityExpressAsKMImpl</KeyManagerClientImpl>
         <Configuration>
-            <ServerURL>https://localhost:${mgt.transport.https.port}${carbon.context}services/</ServerURL>
-            <Username>${admin.username}</Username>
-            <Password>${admin.password}</Password>
-            <TokenURL>https://${carbon.local.ip}:${https.nio.port}/token</TokenURL>
-            <RevokeURL>https://${carbon.local.ip}:${https.nio.port}/revoke</RevokeURL>
+            <TokenAPI>http://ids:5003/connect/token</TokenAPI>
+            <AdminAPI>http://localhost:5001</AdminAPI>
+            <ClientId>admin_ui_sample</ClientId>
+            <ClientSecret>admin_ui_sample</ClientSecret>
+            <Username>info@rocksolidknowledge.com</Username>
+            <Password>Password123!</Password>
         </Configuration>
     </APIKeyManager>
 ```
