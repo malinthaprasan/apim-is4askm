@@ -50,7 +50,6 @@ public class IS4SubscriptionDeletionWorkflow extends SubscriptionDeletionSimpleW
             throw new WorkflowException(msg, e);
         }
 
-
         List<String> protectedResourceScopesList = new ArrayList<>();
         if (protectedResourceDto == null) {
             // This means that the protected resource is missing in IS4.
@@ -100,14 +99,13 @@ public class IS4SubscriptionDeletionWorkflow extends SubscriptionDeletionSimpleW
                     throw new WorkflowException(msg);
                 }
                 List<String> allowedScopes = clientDto.getAllowedScopes();
-
-                Set<String> uniqueScopes = new HashSet<>();
-                uniqueScopes.addAll(allowedScopes);
+                Set<String> uniqueScopes = new HashSet<>(allowedScopes);
 
                 // Remove the scopes related to the unsubscribed API.
                 uniqueScopes.removeAll(protectedResourceScopesList);
 
                 clientDto.setAllowedScopes(new ArrayList<>(uniqueScopes));
+
                 try {
                     is4AdminAPIClient.updateClientById(clientDto.getId(), clientDto);
                 } catch (ApiException e) {

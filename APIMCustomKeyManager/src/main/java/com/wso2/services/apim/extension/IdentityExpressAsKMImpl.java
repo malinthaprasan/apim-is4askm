@@ -35,6 +35,7 @@ import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 public class IdentityExpressAsKMImpl extends AbstractKeyManager {
@@ -290,7 +291,7 @@ public class IdentityExpressAsKMImpl extends AbstractKeyManager {
                     .getNewAccessTokenWithClientCredentials(accessTokenRequest.getClientId(),
                             accessTokenRequest.getClientSecret());
             String accessToken = tokenResponse.get(Constants.OAUTH_RESPONSE_ACCESSTOKEN).toString();
-            Long validityPeriod = Long.parseLong(tokenResponse.get(Constants.OAUTH_RESPONSE_EXPIRY_TIME).toString());
+            long validityPeriod = Long.parseLong(tokenResponse.get(Constants.OAUTH_RESPONSE_EXPIRY_TIME).toString());
             if (tokenResponse.get("scope") != null) {
                 tokenInfo.setScope(((String) tokenResponse.get("scope")).split(" "));
             }
@@ -394,7 +395,7 @@ public class IdentityExpressAsKMImpl extends AbstractKeyManager {
             // "attributes":{}},"expires_in":1433059160531}
             HttpEntity entity = response.getEntity();
             JSONObject parsedObject;
-            reader = new BufferedReader(new InputStreamReader(entity.getContent(), "UTF-8"));
+            reader = new BufferedReader(new InputStreamReader(entity.getContent(), StandardCharsets.UTF_8));
 
             if (HttpStatus.SC_OK == responseCode) {
                 // pass bufferReader object and get read it and retrieve the parsedJson object
