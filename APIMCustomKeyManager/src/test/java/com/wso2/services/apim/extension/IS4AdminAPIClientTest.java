@@ -50,7 +50,6 @@ public class IS4AdminAPIClientTest {
                 break;
             }
         }
-
         if (api.getProtectedResource(PROTECTED_RESOURCE_KEY) != null) {
             api.deleteProtectedResourceWithKey(PROTECTED_RESOURCE_KEY);
         }
@@ -121,7 +120,6 @@ public class IS4AdminAPIClientTest {
         }
     }
 
-    @Test
     public void createResourceAppAndGenerateAccessTokenTest() throws ApiException, IOException {
         /*
             curl -X POST http://ids:5003/connect/token -d "client_id=086410bc-505e-4ec6-81bb-25a30d04ed7d

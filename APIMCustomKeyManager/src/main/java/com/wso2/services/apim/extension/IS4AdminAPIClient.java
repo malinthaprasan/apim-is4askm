@@ -35,7 +35,7 @@ public class IS4AdminAPIClient {
     private static Log log = LogFactory.getLog(IS4AdminAPIClient.class);
     
     public IS4AdminAPIClient() {
-        
+
         clientsApi = new ClientsApi();
         ApiClient client = clientsApi.getApiClient();
         client.setDebugging(true);
