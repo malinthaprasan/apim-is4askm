@@ -59,6 +59,17 @@ Comment out the `<ProductionApplicationRegistration>` and `<SandboxApplicationRe
 ...
 </WorkFlowExtensions>
 ```
+5. Setup the key validation handler class in the api-manager.xml as follows.
+
+```xml
+<!--KeyValidationHandlerClassName>org.wso2.carbon.apimgt.keymgt.handlers.DefaultKeyValidationHandler</KeyValidationHandlerClassName-->
+	<KeyValidationHandlerClassName>com.wso2.services.apim.extension.IS4KeyValidationHandlerExtension</KeyValidationHandlerClassName>
+```
+6. Add the following handler at the beginning of the synapse handlers of the API.
+
+```xml
+<handler class="com.wso2.services.apim.extension.handler.InjectIS4ResourceHandler"/>
+```
 
 ## Troubleshooting
 

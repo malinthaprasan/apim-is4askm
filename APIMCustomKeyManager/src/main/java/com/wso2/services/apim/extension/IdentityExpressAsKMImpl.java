@@ -1,6 +1,11 @@
 package com.wso2.services.apim.extension;
 
-import com.squareup.okhttp.*;
+import com.squareup.okhttp.FormEncodingBuilder;
+import com.squareup.okhttp.OkHttpClient;
+import com.squareup.okhttp.Request;
+import com.squareup.okhttp.RequestBody;
+import com.squareup.okhttp.Response;
+import com.squareup.okhttp.logging.HttpLoggingInterceptor;
 import com.wso2.services.apim.extension.exception.TokenAPIException;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.io.IOUtils;
@@ -361,124 +366,68 @@ public class IdentityExpressAsKMImpl extends AbstractKeyManager {
         return null;
     }
 
-    public AccessTokenInfo getTokenMetaData(String accessToken) throws APIManagementException {
+    public AccessTokenInfo getTokenMetaData(String authHeader) throws APIManagementException {
+
+        OkHttpClient client = new OkHttpClient();
+
+        HttpLoggingInterceptor loggingInterceptor = new HttpLoggingInterceptor();
+        loggingInterceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
+        client.interceptors().add(loggingInterceptor);
+
         AccessTokenInfo tokenInfo = new AccessTokenInfo();
 
-        KeyManagerConfiguration config = KeyManagerHolder.getKeyManagerInstance().getKeyManagerConfiguration();
+        String [] headerParts = authHeader.split("###");
 
-        String introspectionURL = config.getParameter(Constants.INTROSPECTION_URL);
-        String introspectionConsumerKey = config.getParameter(Constants.INTROSPECTION_CK);
-        String introspectionConsumerSecret = config.getParameter(Constants.INTROSPECTION_CS);
-        String encodedSecret = new String(Base64.getEncoder()
-                .encode((introspectionConsumerKey + ":" + introspectionConsumerSecret)
-                        .getBytes(Charset.defaultCharset())), Charset.defaultCharset());
+        if(headerParts.length < 1) {
+            handleException("Invalid authHeader without accessToken and API name");
+        }
 
-        BufferedReader reader = null;
-        CloseableHttpClient client = getCloseableHttpClient();
+        String accessToken = headerParts[0];
+        String apiName = headerParts[1];
 
+        String basicHeader = apiName + ":" + apiName;
+        byte[] encoded = Base64.getEncoder().encode(basicHeader.getBytes(StandardCharsets.UTF_8));
+        basicHeader = new String(encoded);
+
+        RequestBody formEncoding = new FormEncodingBuilder()
+                .add("token", accessToken)
+                .build();
+
+        Request request = new Request.Builder()
+                .url(Constants.INTROSPECTION_URL)
+                .post(formEncoding)
+                .addHeader("Authorization", "Basic " + basicHeader)
+                .build();
+
+        Response response;
+        JSONObject jsonObject;
         try {
-            URIBuilder uriBuilder = new URIBuilder(introspectionURL);
-            uriBuilder.addParameter("access_token", accessToken);
-            uriBuilder.build();
+            response = client.newCall(request).execute();
+            String accessTokenResponse = response.body().string();
+            log.info(accessTokenResponse);
 
-            HttpGet httpGet = new HttpGet(uriBuilder.build());
+            JSONParser parser = new JSONParser();
+            jsonObject = (JSONObject) parser.parse(accessTokenResponse);
 
-            httpGet.setHeader("Authorization", "Basic " + encodedSecret);
-            HttpResponse response = client.execute(httpGet);
-            int responseCode = response.getStatusLine().getStatusCode();
+            tokenInfo.setTokenValid((Boolean) jsonObject.get("active"));
+            tokenInfo.setConsumerKey((String) jsonObject.get("client_id"));
+            tokenInfo.setValidityPeriod(3600L);
+            tokenInfo.setIssuedTime(System.currentTimeMillis());
 
-            if (log.isDebugEnabled()) {
-                log.debug("HTTP Response code : " + responseCode);
-            }
+            String scopes = (String) jsonObject.get("scope");
+            tokenInfo.setScope(scopes.split(" "));
 
-            // {"audience":"MappedClient","scopes":["test"],"principal":{"name":"mappedclient","roles":[],"groups":[],"adminPrincipal":false,
-            // "attributes":{}},"expires_in":1433059160531}
-            HttpEntity entity = response.getEntity();
-            JSONObject parsedObject;
-            reader = new BufferedReader(new InputStreamReader(entity.getContent(), StandardCharsets.UTF_8));
-
-            if (HttpStatus.SC_OK == responseCode) {
-                // pass bufferReader object and get read it and retrieve the parsedJson object
-                parsedObject = getParsedObjectByReader(reader);
-                if (parsedObject != null) {
-
-                    Object principal = ((Map) parsedObject).get("principal");
-
-                    if (principal == null) {
-                        tokenInfo.setTokenValid(false);
-                        return tokenInfo;
-                    }
-                    Map principalMap = (Map) principal;
-                    String clientId = (String) principalMap.get("name");
-                    Long expiryTimeString = (Long) ((Map) parsedObject).get("expires_in");
-
-                    // Returning false if mandatory attributes are missing.
-                    if (clientId == null || expiryTimeString == null) {
-                        tokenInfo.setTokenValid(false);
-                        tokenInfo.setErrorcode(Constants.API_AUTH_ACCESS_TOKEN_EXPIRED);
-                        return tokenInfo;
-                    }
-
-                    long currentTime = System.currentTimeMillis();
-                    long expiryTime = expiryTimeString;
-                    if (expiryTime > currentTime) {
-                        tokenInfo.setTokenValid(true);
-                        tokenInfo.setConsumerKey(clientId);
-                        tokenInfo.setValidityPeriod(expiryTime - currentTime);
-                        // Considering Current Time as the issued time.
-                        tokenInfo.setIssuedTime(currentTime);
-                        JSONArray scopesArray = (JSONArray) ((Map) parsedObject).get("scopes");
-
-                        if (scopesArray != null && !scopesArray.isEmpty()) {
-
-                            String[] scopes = new String[scopesArray.size()];
-                            for (int i = 0; i < scopes.length; i++) {
-                                scopes[i] = (String) scopesArray.get(i);
-                            }
-                            tokenInfo.setScope(scopes);
-                        }
-                    } else {
-                        tokenInfo.setTokenValid(false);
-                        tokenInfo.setErrorcode(Constants.API_AUTH_ACCESS_TOKEN_INACTIVE);
-                        return tokenInfo;
-                    }
-
-                } else {
-                    log.error("Invalid Token " + accessToken);
-                    tokenInfo.setTokenValid(false);
-                    tokenInfo.setErrorcode(Constants.API_AUTH_ACCESS_TOKEN_INACTIVE);
-                    return tokenInfo;
-                }
-            } // for other HTTP error codes we just pass generic message.
-            else {
-                log.error("Invalid Token " + accessToken);
-                tokenInfo.setTokenValid(false);
-                tokenInfo.setErrorcode(Constants.API_AUTH_ACCESS_TOKEN_INACTIVE);
-                return tokenInfo;
-            }
-
-        } catch (UnsupportedEncodingException e) {
-            handleException("The Character Encoding is not supported. " + e.getMessage(), e);
-        } catch (ClientProtocolException e) {
-            handleException(
-                    "HTTP request error has occurred while sending request  to OAuth Provider. " + e.getMessage(), e);
         } catch (IOException e) {
-            handleException("Error has occurred while reading or closing buffer reader. " + e.getMessage(), e);
-        } catch (URISyntaxException e) {
-            handleException("Error occurred while building URL with params." + e.getMessage(), e);
+            e.printStackTrace();
         } catch (ParseException e) {
-            handleException("Error while parsing response json " + e.getMessage(), e);
-        } finally {
-            try {
-                client.close();
-            } catch (IOException e) {
-                log.warn("Error while closing the HttpClient");
-            }
-            IOUtils.closeQuietly(reader);
+            e.printStackTrace();
         }
 
         return tokenInfo;
+
+
     }
+
 
     public void loadConfiguration(KeyManagerConfiguration keyManagerConfiguration) throws APIManagementException {
         log.debug("loadConfiguration executed with : " + keyManagerConfiguration);
