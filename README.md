@@ -63,7 +63,7 @@ Comment out the `<ProductionApplicationRegistration>` and `<SandboxApplicationRe
 
 ```xml
 <!--KeyValidationHandlerClassName>org.wso2.carbon.apimgt.keymgt.handlers.DefaultKeyValidationHandler</KeyValidationHandlerClassName-->
-	<KeyValidationHandlerClassName>com.wso2.services.apim.extension.IS4KeyValidationHandlerExtension</KeyValidationHandlerClassName>
+	<KeyValidationHandlerClassName>com.wso2.services.apim.extension.IS4KeyValidationHandler</KeyValidationHandlerClassName>
 ```
 6. Add the following handler at the beginning of the synapse handlers of the API.
 
