@@ -1,8 +1,9 @@
-package com.wso2.services.apim.extension;
+package com.wso2.services.apim.extension.clients;
 
 import com.squareup.okhttp.Interceptor;
 import com.squareup.okhttp.Request;
 import com.squareup.okhttp.Response;
+import com.wso2.services.apim.extension.Constants;
 import com.wso2.services.apim.extension.exception.TokenAPIException;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.logging.Log;
@@ -33,13 +34,13 @@ public class IS4AdminAPIClient {
     private final ClientsApi clientsApi;
     private final ProtectedResourcesApi resourcesApi;
     private static Log log = LogFactory.getLog(IS4AdminAPIClient.class);
-    
+
     public IS4AdminAPIClient() {
 
         clientsApi = new ClientsApi();
         ApiClient client = clientsApi.getApiClient();
         client.setDebugging(true);
-        
+
         resourcesApi = new ProtectedResourcesApi();
         ApiClient resourcesApiClient = resourcesApi.getApiClient();
         resourcesApiClient.setBasePath(Constants.ADMIN_API_BASE_PATH_DEFAULT);
@@ -49,8 +50,7 @@ public class IS4AdminAPIClient {
         resourcesApi.getApiClient().setBasePath(Constants.ADMIN_API_BASE_PATH_DEFAULT);
     }
 
-    public void init(IS4TokenAPIClient tokenAPIClient, String clientId, String clientSecret, String username,
-            String password) {
+    public void init(IS4TokenAPIClient tokenAPIClient, String clientId, String clientSecret) {
         Interceptor renewTokenInterceptor = new Interceptor() {
             String accessToken = null;
             IS4TokenAPIClient tokenApi = tokenAPIClient;
@@ -64,20 +64,17 @@ public class IS4AdminAPIClient {
                 Response response = chain.proceed(originalRequest);
                 if (!response.isSuccessful() && response.code() == 401) {
                     getAccessToken();
-                    Request newRequest = originalRequest.newBuilder()
-                            .removeHeader(Constants.AUTHORIZATION)
-                            .addHeader(Constants.AUTHORIZATION, accessToken)
-                            .build();
+                    Request newRequest = originalRequest.newBuilder().removeHeader(Constants.AUTHORIZATION)
+                                    .addHeader(Constants.AUTHORIZATION, accessToken).build();
                     response = chain.proceed(newRequest);
                 }
                 return response;
             }
 
             private void getAccessToken() throws IOException {
-                JSONObject tokenResponse = null;
+                JSONObject tokenResponse;
                 try {
-                    tokenResponse = tokenApi
-                            .getNewAccessTokenWithPasswordGrant(clientId, clientSecret, username, password);
+                    tokenResponse = tokenApi.getNewAccessTokenWithClientCredentials(clientId, clientSecret);
                     accessToken = Constants.BEARER + tokenResponse.get(Constants.OAUTH_RESPONSE_ACCESSTOKEN);
                 } catch (TokenAPIException e) {
                     throw new IOException("Error while getting an access token for " + clientId);
@@ -100,11 +97,11 @@ public class IS4AdminAPIClient {
 
     /**
      * Creates a client with {name}_{consumer-key} format
-     * 
-     * @param namePrefix Name prefix
+     *
+     * @param namePrefix  Name prefix
      * @param callbackURI Callback URL
-     * @return
-     * @throws ApiException
+     * @return {@link ClientDto} with the information of the created client
+     * @throws ApiException if error occurs
      */
     public ClientDto addClient(String namePrefix, final String callbackURI) throws ApiException {
         CreateClientDto createClientDto = new CreateClientDto();
@@ -124,8 +121,8 @@ public class IS4AdminAPIClient {
 
     /**
      * Client name will be in {name}_{consumer-key} format
-     * 
-     * @param client
+     *
+     * @param client A {@link ClientDto} with contains the information of the client
      * @return
      * @throws ApiException
      */
@@ -148,7 +145,7 @@ public class IS4AdminAPIClient {
         //update secrets
         ClientDto retrievedClient = getClientByName(client.getClientName());
 
-        if(retrievedClient == null){
+        if (retrievedClient == null) {
             String msg = "Unable to retrieve client information for client name : '" + client.getClientName() + "'";
             log.error(msg);
             throw new ApiException(msg);
@@ -157,7 +154,7 @@ public class IS4AdminAPIClient {
         for (int i = 0; i < Math.min(secretDtosGet.size(), secretDtosCreate.size()); i++) {
             secretDtosGet.get(i).setValue(secretDtosCreate.get(i).getValue());
         }
-        
+
         return retrievedClient;
     }
 
@@ -182,13 +179,13 @@ public class IS4AdminAPIClient {
         return getClientByName(consumerKey);
     }
 
-    public ClientDto updateRetrievedClientWithScopes (ClientDto clientDto, String[] scopes) throws ApiException {
+    public ClientDto updateRetrievedClientWithScopes(ClientDto clientDto, String[] scopes) throws ApiException {
         clientDto.setAllowedScopes(Arrays.asList(scopes));
         clientsApi.clientsByIdPut(clientDto.getId(), clientDto);
         return clientDto;
     }
 
-    public ClientDto updateRetrievedClientWithGrantTypes (ClientDto clientDto, String[] grants) throws ApiException {
+    public ClientDto updateRetrievedClientWithGrantTypes(ClientDto clientDto, String[] grants) throws ApiException {
         clientDto.setAllowedGrantTypes(Arrays.asList(grants));
         clientsApi.clientsByIdPut(clientDto.getId(), clientDto);
         return clientDto;
@@ -200,9 +197,8 @@ public class IS4AdminAPIClient {
      *
      * @param key Protected resource name
      * @return {@link ProtectedResourceDto} with the information of the protected resource.
-     *
      * @throws ApiException if any error happens.
-     * */
+     */
     public ProtectedResourceDto getProtectedResource(String key) throws ApiException {
 
         // This is a search. hence there can be responses with partially mapped names.
@@ -211,7 +207,7 @@ public class IS4AdminAPIClient {
         //Removing the partially mapped resources.
         if (resourceList != null && resourceList.size() > 0) {
             for (ProtectedResourceDto protectedResourceDto : resourceList) {
-                if(key.equals(protectedResourceDto.getName())){
+                if (key.equals(protectedResourceDto.getName())) {
                     return protectedResourceDto;
                 }
             }
@@ -230,15 +226,14 @@ public class IS4AdminAPIClient {
      *
      * @param protectedResourceKeys {@link List} of protected resource names to get the scopes
      * @return {@link List} of the scope names associated with all the protected resources given in the input
-     *
      * @throws ApiException if any error occurs.
-     * */
+     */
     public List<String> getScopeList(List<String> protectedResourceKeys) throws ApiException {
         List<String> scopeList = new ArrayList<>();
         for (String resourceKey : protectedResourceKeys) {
             ProtectedResourceDto protectedResourceDto = getProtectedResource(resourceKey);
 
-            if(protectedResourceDto == null){
+            if (protectedResourceDto == null) {
                 log.warn("Unable to get the protected resource details for key : " + resourceKey);
                 continue;
             }
@@ -256,12 +251,11 @@ public class IS4AdminAPIClient {
      * This method creates the protected resources in the IS4 server.
      * The current implementation only supports the use of shared secrets with a protected resource.
      *
-     * @param key the name of the protected resource.
+     * @param key    the name of the protected resource.
      * @param secret the client secret to be associated with the protected resource.
      * @param scopes the list of scopes to be associated with the protected resource.
-     *
      * @throws ApiException if error occurs.
-     * */
+     */
     public void addProtectedResource(String key, String secret, String[] scopes) throws ApiException {
         CreateProtectedResourceDto protectedResourceDto = new CreateProtectedResourceDto();
         protectedResourceDto.setName(key);
@@ -284,25 +278,25 @@ public class IS4AdminAPIClient {
      * This method associates the given list of scopes to the given protected resource.
      * This method will add new scopes as well as remove any scopes that have been removed in API Manager
      *
-     * @param key the name of the protected resource
+     * @param key    the name of the protected resource
      * @param scopes the list of scopes that needs to be associated with the given protected resource
-     *
      * @throws ApiException if an error occurs or if the given protected resource is not in IS4
-     * */
+     */
     public void updateProtectedResourceWithScopes(String key, String[] scopes) throws ApiException {
         ProtectedResourceDto protectedResourceDto = getProtectedResource(key);
         updateProtectedResourceWithScopes(protectedResourceDto, scopes);
     }
 
-    public void updateProtectedResourceWithScopes(ProtectedResourceDto protectedResourceDto, String[] scopes) throws ApiException {
+    public void updateProtectedResourceWithScopes(ProtectedResourceDto protectedResourceDto, String[] scopes)
+            throws ApiException {
         String logPrefix = "[Updating protected resource : '" + protectedResourceDto.getName() + "' with scopes] ";
-        
+
         //if scopes are null, all the scopes of the protected resource except the one with resource name should be 
         //  deleted. Hence, creating an empty scope array
         if (scopes == null) {
             scopes = new String[0];
         }
-        
+
         log.debug(logPrefix + " Retrieving..");
         if (protectedResourceDto != null) {
             log.debug(logPrefix + " Found..");
@@ -343,7 +337,8 @@ public class IS4AdminAPIClient {
             }
             log.debug(logPrefix + " Checking for deleted completed.");
         } else {
-            throw new ApiException("Protected resource with name : '" +  protectedResourceDto.getName() + "' not found.");
+            throw new ApiException(
+                    "Protected resource with name : '" + protectedResourceDto.getName() + "' not found.");
         }
     }
 
@@ -352,13 +347,13 @@ public class IS4AdminAPIClient {
      *
      * @param key the name of the protected resource to be removed.
      * @throws ApiException if an error occurs.
-     * */
+     */
     public void deleteProtectedResourceWithKey(String key) throws ApiException {
         ProtectedResourceDto protectedResourceDto = getProtectedResource(key);
         if (protectedResourceDto != null) {
             resourcesApi.protectedResourcesByIdDelete(protectedResourceDto.getId());
-        }else{
-            log.warn("Unable to find the protected resource details for name : '" + key + "'" );
+        } else {
+            log.warn("Unable to find the protected resource details for name : '" + key + "'");
         }
     }
 
@@ -369,16 +364,15 @@ public class IS4AdminAPIClient {
      *
      * @param name the name of the OAuth client in IS4
      * @return {@link ClientDto} with the information of the IS4 client
-     *
      * @throws ApiException if any error happens.
-     * */
+     */
 
     protected ClientDto getClientByName(String name) throws ApiException {
         ClientDtoRet clientDtos = clientsApi.clientsGet(name);
 
         if (clientDtos != null && clientDtos.size() > 0) {
             for (ClientDto clientDto : clientDtos) {
-                if(clientDto.getClientName().endsWith(name)){
+                if (clientDto.getClientName().endsWith(name)) {
                     return clientDto;
                 }
             }
@@ -391,7 +385,7 @@ public class IS4AdminAPIClient {
         }
         return null;
     }
-    
+
     private boolean containsScope(List<ScopeDto> scopeDtoList, String scopeName) {
         for (ScopeDto aScopeDtoList : scopeDtoList) {
             if (aScopeDtoList.getName().equals(scopeName)) {

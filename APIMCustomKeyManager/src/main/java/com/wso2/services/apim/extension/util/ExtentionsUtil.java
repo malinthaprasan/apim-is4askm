@@ -1,4 +1,4 @@
-package com.wso2.services.apim.extension;
+package com.wso2.services.apim.extension.util;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -10,9 +10,9 @@ import org.wso2.services.is4.model.SecretDto;
 
 import java.util.List;
 
-public class MappingUtil {
+public class ExtentionsUtil {
 
-    private static Log log = LogFactory.getLog(MappingUtil.class);
+    private static Log log = LogFactory.getLog(ExtentionsUtil.class);
 
     public static OAuthApplicationInfo getOAuthAppInfoFromIS4Client(ClientDto dto) {
         OAuthApplicationInfo oAuthApplicationInfo = new OAuthApplicationInfo();
@@ -24,7 +24,7 @@ public class MappingUtil {
             return null;
         }
         String logPrefix = "[Getting OAuth App from IS4 Client" + dto.getClientName() + "] ";
-        
+
         oAuthAppInfo.setClientId(dto.getClientId());
         if (dto.getClientSecrets() != null && dto.getClientSecrets().size() > 0) {
             oAuthAppInfo.setClientSecret(dto.getClientSecrets().get(0).getValue());
@@ -50,25 +50,25 @@ public class MappingUtil {
 
         //todo add properly with response grants
         oAuthAppInfo.addParameter(ApplicationConstants.OAUTH_CLIENT_GRANT, "client_credentials");
-        
+
         return oAuthAppInfo;
     }
 
     public static ClientDto setSecrets(ClientDto from, ClientDto to) {
-        List<SecretDto> targetSecretDtos = to.getClientSecrets();
-        List<SecretDto> sourceSecretDtos = from.getClientSecrets();
-        
-        if(targetSecretDtos != null && sourceSecretDtos != null) {
-            for (int i = 0; i < Math.min(targetSecretDtos.size(), sourceSecretDtos.size()); i++) {
-                targetSecretDtos.get(i).setValue(sourceSecretDtos.get(i).getValue());
+        List<SecretDto> targetSecretDtoList = to.getClientSecrets();
+        List<SecretDto> sourceSecretDtoList = from.getClientSecrets();
+
+        if (targetSecretDtoList != null && sourceSecretDtoList != null) {
+            for (int i = 0; i < Math.min(targetSecretDtoList.size(), sourceSecretDtoList.size()); i++) {
+                targetSecretDtoList.get(i).setValue(sourceSecretDtoList.get(i).getValue());
             }
         }
         return to;
     }
 
-    public static APIIdentifier getAPIID(String apiName, String apiVersion, String apiProvider){
-        APIIdentifier apiIdentifier = new APIIdentifier(apiProvider, apiName,apiVersion);
+    public static APIIdentifier getApiId(String apiName, String apiVersion, String apiProvider) {
+        APIIdentifier apiIdentifier = new APIIdentifier(apiProvider, apiName, apiVersion);
         return apiIdentifier;
     }
-    
+
 }

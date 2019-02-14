@@ -1,8 +1,8 @@
 package com.wso2.services.apim.extension.workflow;
 
-import com.wso2.services.apim.extension.APIMClient;
-import com.wso2.services.apim.extension.IS4AdminAPIClient;
-import com.wso2.services.apim.extension.MappingUtil;
+import com.wso2.services.apim.extension.clients.APIManagerAdminClient;
+import com.wso2.services.apim.extension.clients.IS4AdminAPIClient;
+import com.wso2.services.apim.extension.util.ExtentionsUtil;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.wso2.carbon.apimgt.api.APIManagementException;
@@ -25,11 +25,11 @@ import java.util.Set;
 public class IS4SubscriptionCreationWorkflow extends SubscriptionCreationSimpleWorkflowExecutor {
     private static Log log = LogFactory.getLog(IS4SubscriptionCreationWorkflow.class);
 
-    private final APIMClient apimClient;
+    private final APIManagerAdminClient APIManagerAdminClient;
     private final IS4AdminAPIClient is4AdminAPIClient;
 
     public IS4SubscriptionCreationWorkflow() {
-        apimClient = new APIMClient();
+        APIManagerAdminClient = new APIManagerAdminClient();
         is4AdminAPIClient = new IS4AdminAPIClient();
 
     }
@@ -39,7 +39,7 @@ public class IS4SubscriptionCreationWorkflow extends SubscriptionCreationSimpleW
         SubscriptionWorkflowDTO subscriptionWorkflowDTO = (SubscriptionWorkflowDTO) workflowDTO;
 
         // First, check whether there is a protected resource for the API.
-        APIIdentifier apiIdentifier = MappingUtil.getAPIID(subscriptionWorkflowDTO.getApiName(),
+        APIIdentifier apiIdentifier = ExtentionsUtil.getApiId(subscriptionWorkflowDTO.getApiName(),
                 subscriptionWorkflowDTO.getApiVersion(), subscriptionWorkflowDTO.getApiProvider());
         String apiId = apiIdentifier.toString();
 
@@ -58,7 +58,7 @@ public class IS4SubscriptionCreationWorkflow extends SubscriptionCreationSimpleW
             // Hence we create it.
             try {
                 //We get the scopes of the API.
-                Set<Scope> scopesSet = apimClient.getAPIScopes(apiIdentifier);
+                Set<Scope> scopesSet = APIManagerAdminClient.getAPIScopes(apiIdentifier);
                 String[] scopes = new String[scopesSet.size()];
 
                 int i = 0;
@@ -93,7 +93,7 @@ public class IS4SubscriptionCreationWorkflow extends SubscriptionCreationSimpleW
         int applicationId = 0;
 
         try {
-            applicationId = apimClient.getApplicationId(subscriptionWorkflowDTO.getApplicationName(),
+            applicationId = APIManagerAdminClient.getApplicationId(subscriptionWorkflowDTO.getApplicationName(),
                     subscriptionWorkflowDTO.getSubscriber());
         } catch (APIManagementException e) {
             throw new WorkflowException("Unable to get application details");
@@ -101,7 +101,7 @@ public class IS4SubscriptionCreationWorkflow extends SubscriptionCreationSimpleW
 
         Set<String> consumerKeys;
         try {
-            consumerKeys = apimClient.getConsumerKeysOfApplication(applicationId);
+            consumerKeys = APIManagerAdminClient.getConsumerKeysOfApplication(applicationId);
         } catch (APIManagementException e) {
             String msg = "Error while retrieving consumer keys of application : '"
                     + subscriptionWorkflowDTO.getApplicationName() + "'";

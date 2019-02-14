@@ -1,4 +1,4 @@
-package com.wso2.services.apim.extension;
+package com.wso2.services.apim.extension.token;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.logging.Log;

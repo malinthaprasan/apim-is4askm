@@ -12,7 +12,7 @@ public class Constants {
     public static final String IS4_USERNAME = "Username";
     public static final String IS4_PASSWORD = "Password";
     public static final String IS4_ADMIN_API_BASE_PATH = "AdminAPI";
-    public static final String IS4_IS4_TOKEN_API_URL = "TokenAPI";
+    public static final String IS4_TOKEN_API_URL = "TokenAPI";
     public static final String IS4_INTROSPECTION_API = "IntrospectionAPI";
 
     public static final String APIM_TOKEN_SCOPE_DEFAULT = "default";
@@ -43,20 +43,5 @@ public class Constants {
     public static final String CLIENT_CONTACT_EMAIL = "contactEmail";
     public static final String INTROSPECTION_CK = "ConsumerKey";
     public static final String INTROSPECTION_CS = "ConsumerSecret";
-    
-    
-    
-    public static final int API_AUTH_GENERAL_ERROR       = 900900;
-    public static final int API_AUTH_INVALID_CREDENTIALS = 900901;
-    public static final int API_AUTH_MISSING_CREDENTIALS = 900902;
-    public static final int API_AUTH_ACCESS_TOKEN_EXPIRED = 900903;
-    public static final int API_AUTH_ACCESS_TOKEN_INACTIVE = 900904;
-    public static final int API_AUTH_INCORRECT_ACCESS_TOKEN_TYPE = 900905;
-    public static final int API_AUTH_INCORRECT_API_RESOURCE = 900906;
-    public static final int API_BLOCKED = 900907;
-    public static final int API_AUTH_RESOURCE_FORBIDDEN = 900908;
-    public static final int SUBSCRIPTION_INACTIVE = 900909;
-    public static final int INVALID_SCOPE = 900910;
-    
-    
+
 }

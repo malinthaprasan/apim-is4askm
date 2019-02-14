@@ -1,10 +1,11 @@
-package com.wso2.services.apim.extension;
+package com.wso2.services.apim.extension.clients;
 
 import com.squareup.okhttp.FormEncodingBuilder;
 import com.squareup.okhttp.OkHttpClient;
 import com.squareup.okhttp.Request;
 import com.squareup.okhttp.RequestBody;
 import com.squareup.okhttp.Response;
+import com.wso2.services.apim.extension.Constants;
 import com.wso2.services.apim.extension.exception.TokenAPIException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -23,17 +24,19 @@ public class IS4TokenAPIClient {
     public IS4TokenAPIClient() {
         client = new OkHttpClient();
     }
-    
+
     public void setTokenAPIUrl(String tokenAPIUrl) {
         this.tokenAPIUrl = tokenAPIUrl;
     }
 
     public JSONObject getNewAccessTokenWithPasswordGrant(String clientId, String clientSecret, String username,
-            String password) throws TokenAPIException {
+                                                         String password) throws TokenAPIException {
         String logPrefix = "[Getting new access token for App:" + clientId + " for user " + username + "] ";
         log.debug(logPrefix + " Started");
+
         RequestBody formEncoding = getPasswordGrantTokenRequestBody(clientId, clientSecret, username, password);
         JSONObject response = getTokenResponse(logPrefix, formEncoding, tokenAPIUrl);
+
         log.debug(logPrefix + " Completed");
         return response;
     }
@@ -42,29 +45,29 @@ public class IS4TokenAPIClient {
             throws TokenAPIException {
         String logPrefix = "[Getting new access token for App:" + clientId + "] ";
         log.debug(logPrefix + " Started");
+
         RequestBody formEncoding = getClientCredentialsTokenRequestBody(clientId, clientSecret);
         JSONObject response = getTokenResponse(logPrefix, formEncoding, tokenAPIUrl);
+
         log.debug(logPrefix + " Completed");
         return response;
     }
 
-    private JSONObject getTokenResponse(String logPrefix, RequestBody formEncoding, String tokenAPIUrl) throws TokenAPIException {
-        Request request = new Request.Builder()
-                .url(tokenAPIUrl)
-                .post(formEncoding)
-                .build();
-
+    private JSONObject getTokenResponse(String logPrefix, RequestBody formEncoding, String tokenAPIUrl)
+            throws TokenAPIException {
         Response response;
         JSONObject jsonObject;
+
+        Request request = new Request.Builder().url(tokenAPIUrl).post(formEncoding).build();
+
         try {
             response = client.newCall(request).execute();
             String accessTokenResponse = response.body().string();
             log.debug(logPrefix + "Response: " + accessTokenResponse);
 
             if (!response.isSuccessful()) {
-                throw new TokenAPIException(
-                        "Error while invoking token endpoint. Status: " + response.code() + ", body: "
-                                + accessTokenResponse);
+                throw new TokenAPIException("Error while invoking token endpoint. Status: " + response.code()
+                        + ", body: "+ accessTokenResponse);
             }
 
             JSONParser parser = new JSONParser();
@@ -76,7 +79,7 @@ public class IS4TokenAPIClient {
     }
 
     private RequestBody getPasswordGrantTokenRequestBody(String clientId, String clientSecret, String username,
-            String password) {
+                                                         String password) {
         return new FormEncodingBuilder()
                 .add("client_id", clientId)
                 .add("client_secret", clientSecret)

@@ -1,51 +1,76 @@
 package com.wso2.services.apim.extension;
 
+import com.google.common.base.Ascii;
+import com.wso2.services.apim.extension.clients.APIManagerAdminClient;
+import com.wso2.services.apim.extension.clients.IS4AdminAPIClient;
+import com.wso2.services.apim.extension.clients.IS4IntrospectionAPIClient;
+import com.wso2.services.apim.extension.clients.IS4TokenAPIClient;
 import com.wso2.services.apim.extension.exception.IntrospectionAPIException;
 import com.wso2.services.apim.extension.exception.TokenAPIException;
+import com.wso2.services.apim.extension.util.ExtentionsUtil;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.solr.common.StringUtils;
 import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
-import org.json.simple.parser.ParseException;
 import org.wso2.carbon.apimgt.api.APIManagementException;
 import org.wso2.carbon.apimgt.api.model.*;
 import org.wso2.carbon.apimgt.impl.APIConstants;
 import org.wso2.carbon.apimgt.impl.AbstractKeyManager;
-import org.wso2.carbon.apimgt.impl.factory.KeyManagerHolder;
-import org.wso2.services.is4.ApiClient;
 import org.wso2.services.is4.ApiException;
-import org.wso2.services.is4.api.ClientsApi;
 import org.wso2.services.is4.model.ClientDto;
 import org.wso2.services.is4.model.ProtectedResourceDto;
 
-import java.io.BufferedReader;
-import java.io.IOException;
 import java.util.*;
 
-public class IdentityExpressAsKMImpl extends AbstractKeyManager {
-    public static final String DEFAULT_SCOPE = "wso2_apim_default_scope";
+public class IdentityServer4AsKMImpl extends AbstractKeyManager {
+    public static final String DEFAULT_SCOPE = "NHGateway";
 
-    private static Log log = LogFactory.getLog(IdentityExpressAsKMImpl.class);
+    private static Log log = LogFactory.getLog(IdentityServer4AsKMImpl.class);
     private static final String ERR_MESSAGE = " Error occurred during operation.";
 
     private KeyManagerConfiguration keyManagerConfiguration;
     private IS4AdminAPIClient is4AdminAPIClient;
-    private APIMClient apimClient;
+    private APIManagerAdminClient APIManagerAdminClient;
     private IS4TokenAPIClient tokenAPIClient;
     private IS4IntrospectionAPIClient introspectionAPIClient;
 
-    public IdentityExpressAsKMImpl() {
+    public IdentityServer4AsKMImpl() {
         is4AdminAPIClient = new IS4AdminAPIClient();
-        apimClient = new APIMClient();
+        APIManagerAdminClient = new APIManagerAdminClient();
         tokenAPIClient = new IS4TokenAPIClient();
         introspectionAPIClient = new IS4IntrospectionAPIClient();
     }
 
+    public void loadConfiguration(KeyManagerConfiguration keyManagerConfiguration) throws APIManagementException {
+        log.debug("loadConfiguration executed with : " + keyManagerConfiguration);
+        this.keyManagerConfiguration = keyManagerConfiguration;
+
+        String tokenAPIUrl = keyManagerConfiguration.getParameter(Constants.IS4_TOKEN_API_URL);
+        if (!StringUtils.isEmpty(tokenAPIUrl)) {
+            tokenAPIClient.setTokenAPIUrl(tokenAPIUrl);
+        }
+
+        String introspectionAPIUrl = keyManagerConfiguration.getParameter(Constants.IS4_INTROSPECTION_API);
+        if (!StringUtils.isEmpty(introspectionAPIUrl)) {
+            introspectionAPIClient.setIntrospectionAPIUrl(introspectionAPIUrl);
+        }
+
+        is4AdminAPIClient.init(
+                tokenAPIClient,
+                keyManagerConfiguration.getParameter(Constants.IS4_CLIENT_ID),
+                keyManagerConfiguration.getParameter(Constants.IS4_CLIENT_SECRET)
+        );
+
+        String adminAPIUrl = keyManagerConfiguration.getParameter(Constants.IS4_ADMIN_API_BASE_PATH);
+
+        if (!StringUtils.isEmpty(adminAPIUrl)) {
+            is4AdminAPIClient.setBasePath(adminAPIUrl);
+        }
+    }
+
     public AccessTokenRequest buildAccessTokenRequestFromOAuthApp(OAuthApplicationInfo oAuthApplication,
-                                                                  AccessTokenRequest tokenRequest) throws APIManagementException {
+                                                                  AccessTokenRequest tokenRequest)
+            throws APIManagementException {
         if (oAuthApplication == null) {
             return tokenRequest;
         }
@@ -83,7 +108,6 @@ public class IdentityExpressAsKMImpl extends AbstractKeyManager {
         } else {
             String[] tokenScopes = new String[1];
             tokenScopes[0] = Constants.IS4_TOKEN_SCOPE_DEFAULT;
-            ;
             tokenRequest.setScope(tokenScopes);
         }
 
@@ -105,20 +129,6 @@ public class IdentityExpressAsKMImpl extends AbstractKeyManager {
         throw new APIManagementException(msg, e);
     }
 
-    private CloseableHttpClient getCloseableHttpClient() {
-        CloseableHttpClient httpClient = HttpClientBuilder.create().build();
-        return httpClient;
-    }
-
-    private JSONObject getParsedObjectByReader(BufferedReader reader) throws ParseException, IOException {
-        JSONObject parsedObject = null;
-        JSONParser parser = new JSONParser();
-        if (reader != null) {
-            parsedObject = (JSONObject) parser.parse(reader);
-        }
-        return parsedObject;
-    }
-
 
     public OAuthApplicationInfo buildFromJSON(String json) throws APIManagementException {
         return null;
@@ -135,7 +145,7 @@ public class IdentityExpressAsKMImpl extends AbstractKeyManager {
             //todo: check with application  sharing
             String appOwner = (String) oAuthApplicationInfo.getParameter("username");
 
-            List<String> subscribedAPIIds = apimClient.getSubscribedAPIIds(appOwner, appName);
+            List<String> subscribedAPIIds = APIManagerAdminClient.getSubscribedAPIIds(appOwner, appName);
             List<String> scopes = is4AdminAPIClient.getScopeList(subscribedAPIIds);
 
             if (scopes.isEmpty()) {
@@ -149,21 +159,31 @@ public class IdentityExpressAsKMImpl extends AbstractKeyManager {
             }
 
             // Create API request
-            ClientDto dto = is4AdminAPIClient
-                    .addClient(appName, oAuthApplicationInfo.getCallBackURL());
+            ClientDto clientDto = is4AdminAPIClient.addClient(appName, oAuthApplicationInfo.getCallBackURL());
 
-            //todo: set grant types from app request
-            dto.setAllowedGrantTypes(new ArrayList<String>() {{
-                add("client_credentials");
-            }});
+            // Add the access token to the application attributes
+            int applicationId = APIManagerAdminClient.getApplicationId(appName, appOwner);
+            String attributeKey =
+                    generateApplicationSecretPropertyName(
+                            String.valueOf(oAuthApplicationInfo.getParameter("key_type")), "Consumer Secret");
+            Map<String, String> applicationAttributes = new HashMap<>();
+            applicationAttributes.put(attributeKey, clientDto.getClientSecrets().get(0).getValue());
 
-            dto.setAllowedScopes(scopes);
-            is4AdminAPIClient.updateClientById(dto.getId(), dto);
+            APIManagerAdminClient.setApplicationAttributes(applicationId, applicationAttributes);
 
-            ClientDto updatedDto = is4AdminAPIClient.getClientById(dto.getId());
-            MappingUtil.setSecrets(dto, updatedDto);
+            //Populate the OAuth2 grantTypes coming from the UI
+            populateOAuth2GrantTypes(oAuthApplicationInfo, clientDto);
 
-            oAuthApplicationInfo = MappingUtil.getOAuthAppInfoFromIS4Client(updatedDto, oAuthApplicationInfo);
+            // This has been done because the grant types were not persisted after sending them in the add request.
+            // TODO: Check this in a proper IS4 deployment and if possible send the grant types at application creation time
+            clientDto.setAllowedScopes(scopes);
+            is4AdminAPIClient.updateClientById(clientDto.getId(), clientDto);
+
+            ClientDto updatedDto = is4AdminAPIClient.getClientById(clientDto.getId());
+            ExtentionsUtil.setSecrets(clientDto, updatedDto);
+
+            oAuthApplicationInfo = ExtentionsUtil.getOAuthAppInfoFromIS4Client(updatedDto, oAuthApplicationInfo);
+
             log.debug(logPrefix + "Completed");
             return oAuthApplicationInfo;
         } catch (LinkageError e) { //can execute when dependencies are not added properly
@@ -178,45 +198,7 @@ public class IdentityExpressAsKMImpl extends AbstractKeyManager {
     public OAuthApplicationInfo updateApplication(OAuthAppRequest oauthAppRequest) throws APIManagementException {
         log.debug("Updating OAuth Client.." + oauthAppRequest.getOAuthApplicationInfo().getClientId());
 
-        OAuthApplicationInfo oAuthApplicationInfo = oauthAppRequest.getOAuthApplicationInfo();
-
-        // We have to send the id with the update request.
-        String consumerKey = oAuthApplicationInfo.getClientId();
-
-        if (consumerKey == null || consumerKey.isEmpty()) {
-            return oauthAppRequest.getOAuthApplicationInfo();
-        }
-
-        KeyManagerConfiguration config = KeyManagerHolder.getKeyManagerInstance().getKeyManagerConfiguration();
-
-        // Getting Client Registration url and Access Token from config.
-        String registrationEndpoint = config.getParameter(Constants.CLIENT_REG_ENDPOINT);
-//        String registrationToken = config.getParameter(Constants.REGISTRAION_ACCESS_TOKEN);
-
-        try {
-            // Generate UUIDs as Client Id and Secret
-//            oAuthApplicationInfo.setClientId(generateUUID());
-//            oAuthApplicationInfo.setClientSecret(generateUUID());
-            // Create API request
-            ApiClient apiClient = new ApiClient();
-            apiClient.setConnectTimeout(10000);
-            apiClient.setReadTimeout(10000);
-            apiClient.setWriteTimeout(10000);
-            apiClient.setBasePath(registrationEndpoint);
-
-            ClientsApi clientsApi = new ClientsApi(apiClient);
-
-            // Get the client object from back end
-            ClientDto clientDto = getClientFromBE(consumerKey);
-            // update the values
-            clientDto.setClientName(oAuthApplicationInfo.getClientName());
-            // Call the back end
-            clientsApi.clientsByIdPut(consumerKey, clientDto);
-            log.debug("BE updateApplication success");
-            return oAuthApplicationInfo;
-        } catch (ApiException e) {
-            log.error("Error in connection to Backend API in updateApplication", e);
-        }
+        //TODO: implement properly
         return null;
     }
 
@@ -225,6 +207,11 @@ public class IdentityExpressAsKMImpl extends AbstractKeyManager {
         log.debug(logPrefix + "Started");
         try {
             is4AdminAPIClient.deleteClientByConsumerKey(consumerKey);
+
+            // Delete the application attributes
+            int applicationId = APIManagerAdminClient.getApplicationIdFromConsumerKey(consumerKey);
+            APIManagerAdminClient.deleteApplicationAttributes(applicationId);
+
             log.debug(logPrefix + "Completed");
         } catch (ApiException e) {
             handleException(logPrefix + ERR_MESSAGE, e);
@@ -235,9 +222,18 @@ public class IdentityExpressAsKMImpl extends AbstractKeyManager {
         String logPrefix = "[Retrieving App:" + consumerKey + "] ";
         log.debug(logPrefix + " Started");
         try {
-//            String is4AppId = apimClient.getIS4AppIdFromConsumerKey(consumerKey);
             ClientDto clientDto = is4AdminAPIClient.getClientByConsumerKey(consumerKey);
-            OAuthApplicationInfo oAuthApplicationInfo = MappingUtil.getOAuthAppInfoFromIS4Client(clientDto);
+            OAuthApplicationInfo oAuthApplicationInfo = ExtentionsUtil.getOAuthAppInfoFromIS4Client(clientDto);
+
+            // Set the consumerSecret and access token from application
+            int applicationId = APIManagerAdminClient.getApplicationIdFromConsumerKey(consumerKey);
+            Map<String, String> applicationAttributes = APIManagerAdminClient.getApplicationAttributes(applicationId);
+            String applicationTokenType = APIManagerAdminClient.getApplicationTokenType(consumerKey);
+
+            String attributeKey = generateApplicationSecretPropertyName(applicationTokenType, "Consumer Secret");
+
+            oAuthApplicationInfo.setClientSecret(applicationAttributes.get(attributeKey));
+
             log.debug(logPrefix + " Completed");
             return oAuthApplicationInfo;
         } catch (ApiException e) {
@@ -255,9 +251,17 @@ public class IdentityExpressAsKMImpl extends AbstractKeyManager {
     }
 
     public AccessTokenInfo getAccessTokenByConsumerKey(String consumerKey) throws APIManagementException {
-        // TODO: This is required
         log.info("WARNING : request to getAccessTokenByConsumerKey > " + consumerKey);
-        return null;
+        int applicationId = APIManagerAdminClient.getApplicationIdFromConsumerKey(consumerKey);
+        Map<String, String> applicationAttributes = APIManagerAdminClient.getApplicationAttributes(applicationId);
+        String applicationTokenType = APIManagerAdminClient.getApplicationTokenType(consumerKey);
+
+        String attributeKey = generateApplicationSecretPropertyName(applicationTokenType, "Access Token");
+
+        AccessTokenInfo tokenInfo = new AccessTokenInfo();
+        tokenInfo.setConsumerKey(consumerKey);
+        tokenInfo.setAccessToken(applicationAttributes.get(attributeKey));
+        return tokenInfo;
     }
 
     public Set<String> getActiveTokensByConsumerKey(String consumerKey) throws APIManagementException {
@@ -288,6 +292,13 @@ public class IdentityExpressAsKMImpl extends AbstractKeyManager {
             tokenInfo.setValidityPeriod(validityPeriod);
             tokenInfo.setConsumerKey(accessTokenRequest.getClientId());
             tokenInfo.setTokenValid(true);
+
+            // Once token creation is successful, we set that information as an attribute of the application.
+            try {
+                persistApplicationAccessToken(accessTokenRequest, accessToken);
+            } catch (APIManagementException e) {
+                handleException("Error while persisting application attributes", e);
+            }
         } catch (TokenAPIException e) {
             handleException("Error while parsing response from token api", e);
         }
@@ -322,7 +333,7 @@ public class IdentityExpressAsKMImpl extends AbstractKeyManager {
     public boolean registerNewResource(API api, Map data) throws APIManagementException {
         String logPrefix = "[Registering a new protected resource for api:" + api.getId().toString() + "] ";
         log.debug(logPrefix + "Started");
-        String[] scopes = getScopeArray(api);
+        String[] scopes = getAPIScopes(api);
         try {
             is4AdminAPIClient.addProtectedResource(api.getId().toString(), api.getId().toString(), scopes);
         } catch (ApiException e) {
@@ -337,7 +348,7 @@ public class IdentityExpressAsKMImpl extends AbstractKeyManager {
         String logPrefix = "[Updating protected resource for api with scopes:" + api.getId().toString() + "] ";
         log.debug(logPrefix + "Started");
         try {
-            is4AdminAPIClient.updateProtectedResourceWithScopes(api.getId().toString(), getScopeArray(api));
+            is4AdminAPIClient.updateProtectedResourceWithScopes(api.getId().toString(), getAPIScopes(api));
         } catch (ApiException e) {
             handleException(logPrefix + "Error while updating resource " + api.getId().toString(), e);
         }
@@ -353,9 +364,9 @@ public class IdentityExpressAsKMImpl extends AbstractKeyManager {
     public AccessTokenInfo getTokenMetaData(String authHeader) throws APIManagementException {
         AccessTokenInfo tokenInfo = new AccessTokenInfo();
 
-        String [] headerParts = authHeader.split("###");
+        String[] headerParts = authHeader.split("###");
 
-        if(headerParts.length < 1) {
+        if (headerParts.length < 1) {
             handleException("Invalid authHeader without accessToken and API name");
         }
 
@@ -386,77 +397,11 @@ public class IdentityExpressAsKMImpl extends AbstractKeyManager {
         return null;
     }
 
-
-    public void loadConfiguration(KeyManagerConfiguration keyManagerConfiguration) throws APIManagementException {
-        log.debug("loadConfiguration executed with : " + keyManagerConfiguration);
-        this.keyManagerConfiguration = keyManagerConfiguration;
-
-        String tokenAPIUrl = keyManagerConfiguration.getParameter(Constants.IS4_IS4_TOKEN_API_URL);
-        if (!StringUtils.isEmpty(tokenAPIUrl)) {
-            tokenAPIClient.setTokenAPIUrl(tokenAPIUrl);
-        }
-
-        String introspectionAPIUrl = keyManagerConfiguration.getParameter(Constants.IS4_INTROSPECTION_API);
-        if (!StringUtils.isEmpty(introspectionAPIUrl)) {
-            introspectionAPIClient.setIntrospectionAPIUrl(introspectionAPIUrl);
-        }
-
-        is4AdminAPIClient.init(
-                tokenAPIClient,
-                keyManagerConfiguration.getParameter(Constants.IS4_CLIENT_ID),
-                keyManagerConfiguration.getParameter(Constants.IS4_CLIENT_SECRET),
-                keyManagerConfiguration.getParameter(Constants.IS4_USERNAME),
-                keyManagerConfiguration.getParameter(Constants.IS4_PASSWORD)
-        );
-
-        String adminAPIUrl = keyManagerConfiguration.getParameter(Constants.IS4_ADMIN_API_BASE_PATH);
-
-        if (!StringUtils.isEmpty(adminAPIUrl)) {
-            is4AdminAPIClient.setBasePath(adminAPIUrl);
-        }
-    }
-
     public OAuthApplicationInfo mapOAuthApplication(OAuthAppRequest oAuthAppRequest) throws APIManagementException {
         return oAuthAppRequest.getOAuthApplicationInfo();
     }
 
-    private String generateUUID() {
-        return UUID.randomUUID().toString().replace("-", "");
-    }
-
-    private ClientDto getClientFromBE(String id) {
-        try {
-
-            KeyManagerConfiguration config = KeyManagerHolder.getKeyManagerInstance().getKeyManagerConfiguration();
-
-            // Getting Client Registration Url and Access Token from Config.
-            String registrationEndpoint = config.getParameter(Constants.CLIENT_REG_ENDPOINT);
-
-            ClientDto clientDto = new ClientDto();
-
-            // Create API request
-            ApiClient apiClient = new ApiClient();
-            apiClient.setConnectTimeout(10000);
-            apiClient.setReadTimeout(10000);
-            apiClient.setWriteTimeout(10000);
-            apiClient.setBasePath(registrationEndpoint);
-
-            ClientsApi clientsApi = new ClientsApi(apiClient);
-
-            // Call the backend
-            clientsApi.clientsByIdGet(id);
-
-            // TODO update the client dto object
-
-            log.debug("Retrieving Client From BE successful");
-            return clientDto;
-        } catch (Exception e) {
-            log.error("Error in connection to Backend API in getClientFromBE", e);
-        }
-        return null;
-    }
-
-    private String[] getScopeArray(API api) {
+    private String[] getAPIScopes(API api) {
         String[] scopes = null;
         if (api.getScopes() != null && api.getScopes().size() > 0) {
             scopes = new String[api.getScopes().size()];
@@ -466,5 +411,37 @@ public class IdentityExpressAsKMImpl extends AbstractKeyManager {
             }
         }
         return scopes;
+    }
+
+    private void persistApplicationAccessToken(AccessTokenRequest accessTokenRequest, String accessToken)
+            throws APIManagementException {
+        int applicationId = APIManagerAdminClient.getApplicationIdFromConsumerKey(accessTokenRequest.getClientId());
+        String applicationTokenType = APIManagerAdminClient.getApplicationTokenType(accessTokenRequest.getClientId());
+        String attributeKey = generateApplicationSecretPropertyName(applicationTokenType, "Access Token");
+
+        //Remove the existing attribute
+        APIManagerAdminClient.deleteApplicationAttribute(applicationId, attributeKey);
+
+        Map<String, String> attributesMap = new HashMap<>();
+        attributesMap.put(attributeKey, accessToken);
+        APIManagerAdminClient.setApplicationAttributes(applicationId, attributesMap);
+    }
+
+    private String generateApplicationSecretPropertyName(String key_type, String suffix) {
+        String parsedKeyType = key_type.isEmpty() ? key_type :
+                (new StringBuilder(key_type.length())).append(Ascii.toUpperCase(key_type.charAt(0)))
+                        .append(Ascii.toLowerCase(key_type.substring(1))).toString();
+        return parsedKeyType + " " + suffix;
+    }
+
+    private void populateOAuth2GrantTypes(OAuthApplicationInfo oAuthApplicationInfo, ClientDto clientDto) {
+        List<String> grantTypes = new ArrayList<>();
+        if (oAuthApplicationInfo.getParameter("grant_types") != null) {
+            String[] allGrantTypes = String.valueOf(oAuthApplicationInfo.getParameter("grant_types")).split(",");
+            grantTypes.addAll(Arrays.asList(allGrantTypes));
+        } else {
+            grantTypes.add("client_credentials");
+        }
+        clientDto.setAllowedGrantTypes(grantTypes);
     }
 }

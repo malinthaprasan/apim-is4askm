@@ -1,8 +1,8 @@
 package com.wso2.services.apim.extension.workflow;
 
-import com.wso2.services.apim.extension.APIMClient;
-import com.wso2.services.apim.extension.IS4AdminAPIClient;
-import com.wso2.services.apim.extension.MappingUtil;
+import com.wso2.services.apim.extension.clients.APIManagerAdminClient;
+import com.wso2.services.apim.extension.clients.IS4AdminAPIClient;
+import com.wso2.services.apim.extension.util.ExtentionsUtil;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.wso2.carbon.apimgt.api.APIManagementException;
@@ -25,11 +25,11 @@ public class IS4SubscriptionDeletionWorkflow extends SubscriptionDeletionSimpleW
     private static Log log = LogFactory.getLog(IS4SubscriptionDeletionWorkflow.class);
 
 
-    private final APIMClient apimClient;
+    private final APIManagerAdminClient APIManagerAdminClient;
     private final IS4AdminAPIClient is4AdminAPIClient;
 
     public IS4SubscriptionDeletionWorkflow() {
-        apimClient = new APIMClient();
+        APIManagerAdminClient = new APIManagerAdminClient();
         is4AdminAPIClient = new IS4AdminAPIClient();
 
     }
@@ -38,7 +38,7 @@ public class IS4SubscriptionDeletionWorkflow extends SubscriptionDeletionSimpleW
     public WorkflowResponse execute(WorkflowDTO workflowDTO) throws WorkflowException {
         SubscriptionWorkflowDTO subscriptionWorkflowDTO = (SubscriptionWorkflowDTO) workflowDTO;
 
-        APIIdentifier apiIdentifier = MappingUtil.getAPIID(subscriptionWorkflowDTO.getApiName(),
+        APIIdentifier apiIdentifier = ExtentionsUtil.getApiId(subscriptionWorkflowDTO.getApiName(),
                 subscriptionWorkflowDTO.getApiVersion(), subscriptionWorkflowDTO.getApiProvider());
         String apiId = apiIdentifier.toString();
 
@@ -75,7 +75,7 @@ public class IS4SubscriptionDeletionWorkflow extends SubscriptionDeletionSimpleW
 
         Set<String> consumerKeys;
         try {
-            consumerKeys = apimClient.getConsumerKeysOfApplication(applicationId);
+            consumerKeys = APIManagerAdminClient.getConsumerKeysOfApplication(applicationId);
         } catch (APIManagementException e) {
             String msg = "Error while retrieving consumer keys of application : '"
                     + subscriptionWorkflowDTO.getApplicationName() + "'";

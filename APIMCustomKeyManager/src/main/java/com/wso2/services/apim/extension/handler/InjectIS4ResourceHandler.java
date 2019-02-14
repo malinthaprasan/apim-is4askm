@@ -29,7 +29,7 @@ public class InjectIS4ResourceHandler extends AbstractHandler {
         if (authHeader != null) {
             headers.put(HttpHeaders.AUTHORIZATION, authHeader + "###" + apiId);
         }
-        
+
         log.debug("Proceeding Auth header: " + headers.get(HttpHeaders.AUTHORIZATION));
         return true;
     }

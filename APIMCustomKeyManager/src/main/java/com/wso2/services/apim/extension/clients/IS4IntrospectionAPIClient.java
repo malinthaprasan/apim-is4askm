@@ -1,4 +1,4 @@
-package com.wso2.services.apim.extension;
+package com.wso2.services.apim.extension.clients;
 
 import com.squareup.okhttp.FormEncodingBuilder;
 import com.squareup.okhttp.OkHttpClient;
@@ -6,6 +6,7 @@ import com.squareup.okhttp.Request;
 import com.squareup.okhttp.RequestBody;
 import com.squareup.okhttp.Response;
 import com.squareup.okhttp.logging.HttpLoggingInterceptor;
+import com.wso2.services.apim.extension.Constants;
 import com.wso2.services.apim.extension.exception.IntrospectionAPIException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;

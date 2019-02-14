@@ -5,6 +5,8 @@ import com.squareup.okhttp.OkHttpClient;
 import com.squareup.okhttp.Request;
 import com.squareup.okhttp.RequestBody;
 import com.squareup.okhttp.Response;
+import com.wso2.services.apim.extension.clients.IS4AdminAPIClient;
+import com.wso2.services.apim.extension.clients.IS4TokenAPIClient;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.junit.Test;

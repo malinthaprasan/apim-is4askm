@@ -49,7 +49,7 @@ public class ServiceReferenceHolder {
     }
 
     public void setRegistryService(RegistryService registryService) {
-        ServiceReferenceHolder.registryService = registryService;
+        this.registryService = registryService;
     }
 
     public RealmService getRealmService() {
@@ -57,6 +57,6 @@ public class ServiceReferenceHolder {
     }
 
     public void setRealmService(RealmService realmService) {
-        ServiceReferenceHolder.realmService = realmService;
+        this.realmService = realmService;
     }
 }

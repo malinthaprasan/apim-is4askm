@@ -10,7 +10,7 @@
 
 ```xml
     <APIKeyManager>
-        <KeyManagerClientImpl>com.wso2.services.apim.extension.IdentityExpressAsKMImpl</KeyManagerClientImpl>
+        <KeyManagerClientImpl>com.wso2.services.apim.extension.IdentityServer4AsKMImpl</KeyManagerClientImpl>
         <Configuration>
             <TokenAPI>http://ids:5003/connect/token</TokenAPI>
             <AdminAPI>http://localhost:5001</AdminAPI>
@@ -64,7 +64,7 @@ Comment out the `<ProductionApplicationRegistration>` and `<SandboxApplicationRe
 
 ```xml
 <!--KeyValidationHandlerClassName>org.wso2.carbon.apimgt.keymgt.handlers.DefaultKeyValidationHandler</KeyValidationHandlerClassName-->
-	<KeyValidationHandlerClassName>com.wso2.services.apim.extension.IS4KeyValidationHandler</KeyValidationHandlerClassName>
+	<KeyValidationHandlerClassName>com.wso2.services.apim.extension.token.IS4KeyValidationHandler</KeyValidationHandlerClassName>
 ```
 6. Add the following handler at the beginning of the synapse handlers of the API.
 
