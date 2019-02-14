@@ -57,6 +57,12 @@ Comment out the `<ProductionApplicationRegistration>` and `<SandboxApplicationRe
     
     <!--SandboxApplicationRegistration executor="org.wso2.carbon.apimgt.impl.workflow.ApplicationRegistrationSimpleWorkflowExecutor"/-->
     <SandboxApplicationRegistration executor="com.wso2.services.apim.extension.workflow.IS4ApplicationRegistrationWorkflow"/>
+    
+    <!--SubscriptionCreation executor="org.wso2.carbon.apimgt.impl.workflow.SubscriptionCreationSimpleWorkflowExecutor"/-->
+    <SubscriptionCreation executor="com.wso2.services.apim.extension.workflow.IS4SubscriptionCreationWorkflow"/>
+    
+    <!--SubscriptionDeletion executor="org.wso2.carbon.apimgt.impl.workflow.SubscriptionDeletionSimpleWorkflowExecutor"/-->
+    <SubscriptionDeletion executor="com.wso2.services.apim.extension.workflow.IS4SubscriptionDeletionWorkflow"/>
 ...
 </WorkFlowExtensions>
 ```
@@ -66,10 +72,17 @@ Comment out the `<ProductionApplicationRegistration>` and `<SandboxApplicationRe
 <!--KeyValidationHandlerClassName>org.wso2.carbon.apimgt.keymgt.handlers.DefaultKeyValidationHandler</KeyValidationHandlerClassName-->
 	<KeyValidationHandlerClassName>com.wso2.services.apim.extension.token.IS4KeyValidationHandler</KeyValidationHandlerClassName>
 ```
-6. Add the following handler at the beginning of the synapse handlers of the API.
+6. Add the following handler at the beginning of the synapse handlers of the API in velocity.xml.
+(<AM_HOME>/repository/resources/api_templates/velocity_template.xml)
+
 
 ```xml
-<handler class="com.wso2.services.apim.extension.handler.InjectIS4ResourceHandler"/>
+<handlers xmlns="http://ws.apache.org/ns/synapse">
+      <handler class="com.wso2.services.apim.extension.handler.InjectIS4ResourceHandler"/>    <==== 
+#foreach($handler in $handlers)
+<handler xmlns="http://ws.apache.org/ns/synapse" class="$handler.className">
+    #if($handler.hasProperties())
+    #set ($map = $handler.getProperties() )
 ```
 
 ## Troubleshooting
