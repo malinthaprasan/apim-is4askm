@@ -17,8 +17,6 @@
             <IntrospectionAPI>http://ids:5003/connect/introspect</IntrospectionAPI>
             <ClientId>admin_ui_sample</ClientId>
             <ClientSecret>admin_ui_sample</ClientSecret>
-            <Username>info@rocksolidknowledge.com</Username>
-            <Password>Password123!</Password>
         </Configuration>
     </APIKeyManager>
 ```
@@ -45,9 +43,7 @@ ${m2-repo-home}/org/threeten/threetenbp/1.3.5/threetenbp-1.3.5.jar
 
 4. Configure the workflow extensions in workflow-extensions.xml from API Manager carbon console.
 
-![alt text](images/workflow-extension.jpg)
-
-Comment out the `<ProductionApplicationRegistration>` and `<SandboxApplicationRegistration>` elements and add below.
+![alt text](docs/images/workflow-extension.jpg)
 
 ```xml
 <WorkFlowExtensions>
