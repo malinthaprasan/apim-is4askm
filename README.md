@@ -14,6 +14,7 @@
         <Configuration>
             <TokenAPI>http://ids:5003/connect/token</TokenAPI>
             <AdminAPI>http://localhost:5001</AdminAPI>
+            <IntrospectionAPI>http://ids:5003/connect/introspect</IntrospectionAPI>
             <ClientId>admin_ui_sample</ClientId>
             <ClientSecret>admin_ui_sample</ClientSecret>
             <Username>info@rocksolidknowledge.com</Username>
