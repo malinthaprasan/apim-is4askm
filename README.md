@@ -14,6 +14,7 @@
         <Configuration>
             <TokenAPI>http://ids:5003/connect/token</TokenAPI>
             <AdminAPI>http://localhost:5001</AdminAPI>
+            <IntrospectionAPI>http://ids:5003/connect/introspect</IntrospectionAPI>
             <ClientId>admin_ui_sample</ClientId>
             <ClientSecret>admin_ui_sample</ClientSecret>
             <Username>info@rocksolidknowledge.com</Username>
@@ -63,7 +64,7 @@ Comment out the `<ProductionApplicationRegistration>` and `<SandboxApplicationRe
 
 ```xml
 <!--KeyValidationHandlerClassName>org.wso2.carbon.apimgt.keymgt.handlers.DefaultKeyValidationHandler</KeyValidationHandlerClassName-->
-	<KeyValidationHandlerClassName>com.wso2.services.apim.extension.IS4KeyValidationHandlerExtension</KeyValidationHandlerClassName>
+	<KeyValidationHandlerClassName>com.wso2.services.apim.extension.IS4KeyValidationHandler</KeyValidationHandlerClassName>
 ```
 6. Add the following handler at the beginning of the synapse handlers of the API.
 

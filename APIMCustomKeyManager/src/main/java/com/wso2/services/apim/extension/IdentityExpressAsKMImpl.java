@@ -1,31 +1,18 @@
 package com.wso2.services.apim.extension;
 
-import com.squareup.okhttp.FormEncodingBuilder;
-import com.squareup.okhttp.OkHttpClient;
-import com.squareup.okhttp.Request;
-import com.squareup.okhttp.RequestBody;
-import com.squareup.okhttp.Response;
-import com.squareup.okhttp.logging.HttpLoggingInterceptor;
+import com.wso2.services.apim.extension.exception.IntrospectionAPIException;
 import com.wso2.services.apim.extension.exception.TokenAPIException;
-import org.apache.commons.httpclient.HttpStatus;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.ClientProtocolException;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.solr.common.StringUtils;
-import org.json.JSONException;
-import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 import org.wso2.carbon.apimgt.api.APIManagementException;
 import org.wso2.carbon.apimgt.api.model.*;
+import org.wso2.carbon.apimgt.impl.APIConstants;
 import org.wso2.carbon.apimgt.impl.AbstractKeyManager;
 import org.wso2.carbon.apimgt.impl.factory.KeyManagerHolder;
 import org.wso2.services.is4.ApiClient;
@@ -36,11 +23,6 @@ import org.wso2.services.is4.model.ProtectedResourceDto;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.UnsupportedEncodingException;
-import java.net.URISyntaxException;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 public class IdentityExpressAsKMImpl extends AbstractKeyManager {
@@ -53,11 +35,13 @@ public class IdentityExpressAsKMImpl extends AbstractKeyManager {
     private IS4AdminAPIClient is4AdminAPIClient;
     private APIMClient apimClient;
     private IS4TokenAPIClient tokenAPIClient;
+    private IS4IntrospectionAPIClient introspectionAPIClient;
 
     public IdentityExpressAsKMImpl() {
         is4AdminAPIClient = new IS4AdminAPIClient();
         apimClient = new APIMClient();
         tokenAPIClient = new IS4TokenAPIClient();
+        introspectionAPIClient = new IS4IntrospectionAPIClient();
     }
 
     public AccessTokenRequest buildAccessTokenRequestFromOAuthApp(OAuthApplicationInfo oAuthApplication,
@@ -367,13 +351,6 @@ public class IdentityExpressAsKMImpl extends AbstractKeyManager {
     }
 
     public AccessTokenInfo getTokenMetaData(String authHeader) throws APIManagementException {
-
-        OkHttpClient client = new OkHttpClient();
-
-        HttpLoggingInterceptor loggingInterceptor = new HttpLoggingInterceptor();
-        loggingInterceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
-        client.interceptors().add(loggingInterceptor);
-
         AccessTokenInfo tokenInfo = new AccessTokenInfo();
 
         String [] headerParts = authHeader.split("###");
@@ -385,47 +362,28 @@ public class IdentityExpressAsKMImpl extends AbstractKeyManager {
         String accessToken = headerParts[0];
         String apiName = headerParts[1];
 
-        String basicHeader = apiName + ":" + apiName;
-        byte[] encoded = Base64.getEncoder().encode(basicHeader.getBytes(StandardCharsets.UTF_8));
-        basicHeader = new String(encoded);
-
-        RequestBody formEncoding = new FormEncodingBuilder()
-                .add("token", accessToken)
-                .build();
-
-        Request request = new Request.Builder()
-                .url(Constants.INTROSPECTION_URL)
-                .post(formEncoding)
-                .addHeader("Authorization", "Basic " + basicHeader)
-                .build();
-
-        Response response;
-        JSONObject jsonObject;
+        JSONObject introspectionResponse;
         try {
-            response = client.newCall(request).execute();
-            String accessTokenResponse = response.body().string();
-            log.info(accessTokenResponse);
+            introspectionResponse = introspectionAPIClient
+                    .getIntrospectionResponse(accessToken, apiName, apiName);
 
-            JSONParser parser = new JSONParser();
-            jsonObject = (JSONObject) parser.parse(accessTokenResponse);
+            tokenInfo.setTokenValid((Boolean) introspectionResponse.get("active"));
+            if (!tokenInfo.isTokenValid()) {
+                tokenInfo.setErrorcode(APIConstants.KeyValidationStatus.API_AUTH_INVALID_CREDENTIALS);
+                return tokenInfo;
+            }
 
-            tokenInfo.setTokenValid((Boolean) jsonObject.get("active"));
-            tokenInfo.setConsumerKey((String) jsonObject.get("client_id"));
+            tokenInfo.setConsumerKey((String) introspectionResponse.get("client_id"));
             tokenInfo.setValidityPeriod(3600L);
             tokenInfo.setIssuedTime(System.currentTimeMillis());
 
-            String scopes = (String) jsonObject.get("scope");
+            String scopes = (String) introspectionResponse.get("scope");
             tokenInfo.setScope(scopes.split(" "));
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (ParseException e) {
+            return tokenInfo;
+        } catch (IntrospectionAPIException e) {
             e.printStackTrace();
         }
-
-        return tokenInfo;
-
-
+        return null;
     }
 
 
@@ -436,6 +394,11 @@ public class IdentityExpressAsKMImpl extends AbstractKeyManager {
         String tokenAPIUrl = keyManagerConfiguration.getParameter(Constants.IS4_IS4_TOKEN_API_URL);
         if (!StringUtils.isEmpty(tokenAPIUrl)) {
             tokenAPIClient.setTokenAPIUrl(tokenAPIUrl);
+        }
+
+        String introspectionAPIUrl = keyManagerConfiguration.getParameter(Constants.IS4_INTROSPECTION_API);
+        if (!StringUtils.isEmpty(introspectionAPIUrl)) {
+            introspectionAPIClient.setIntrospectionAPIUrl(introspectionAPIUrl);
         }
 
         is4AdminAPIClient.init(
