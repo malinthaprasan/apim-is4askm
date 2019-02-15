@@ -181,7 +181,6 @@ public class IdentityServer4AsKMImpl extends AbstractKeyManager {
 
             ClientDto updatedDto = is4AdminAPIClient.getClientById(clientDto.getId());
             ExtentionsUtil.setSecrets(clientDto, updatedDto);
-
             oAuthApplicationInfo = ExtentionsUtil.getOAuthAppInfoFromIS4Client(updatedDto, oAuthApplicationInfo);
 
             log.debug(logPrefix + "Completed");
@@ -196,9 +195,31 @@ public class IdentityServer4AsKMImpl extends AbstractKeyManager {
     }
 
     public OAuthApplicationInfo updateApplication(OAuthAppRequest oauthAppRequest) throws APIManagementException {
-        log.debug("Updating OAuth Client.." + oauthAppRequest.getOAuthApplicationInfo().getClientId());
+        String logPrefix = "[Updating OAuth App:" + oauthAppRequest.getOAuthApplicationInfo().getClientName() + "] ";
+        log.debug(logPrefix + "started");
 
-        //TODO: implement properly
+        OAuthApplicationInfo oAuthApplicationInfo = oauthAppRequest.getOAuthApplicationInfo();
+        try {
+            ClientDto clientDto = is4AdminAPIClient.getClientByConsumerKey(oAuthApplicationInfo.getClientId());
+            clientDto.setRedirectUris(new ArrayList<>(Collections.singleton(oAuthApplicationInfo.getCallBackURL())));
+
+            populateOAuth2GrantTypes(oAuthApplicationInfo, clientDto);
+
+            is4AdminAPIClient.updateClientById(clientDto.getId(), clientDto);
+
+            ClientDto updatedDto = is4AdminAPIClient.getClientById(clientDto.getId());
+            ExtentionsUtil.setSecrets(clientDto, updatedDto);
+            oAuthApplicationInfo = ExtentionsUtil.getOAuthAppInfoFromIS4Client(updatedDto, oAuthApplicationInfo);
+
+            log.debug(logPrefix + "Completed");
+            return oAuthApplicationInfo;
+        } catch (LinkageError e) { //can execute when dependencies are not added properly
+            handleException(logPrefix + ERR_MESSAGE + " Please make sure "
+                    + "correct dependencies are added to the runtime", e);
+        } catch (ApiException e) {
+            handleException(logPrefix + ERR_MESSAGE, e);
+        }
+
         return null;
     }
 
@@ -247,6 +268,7 @@ public class IdentityServer4AsKMImpl extends AbstractKeyManager {
     }
 
     public void deleteRegisteredResourceByAPIId(String APIId) throws APIManagementException {
+
         log.info("WARNING : request to deleteRegisteredResourceByAPIId > " + APIId);
     }
 
