@@ -102,7 +102,7 @@
                             ${project.artifactId}
                         </Bundle-SymbolicName>
                         <Private-Package>
-                            com.wso2.services.apim.extension.internal;
+                            org.wso2.apimgt.keymgt.is4.internal;
                         </Private-Package>
                         <Import-Package>
                             com.squareup.okhttp, org.apache.commons.httpclient, org.apache.commons.io,
@@ -135,8 +135,8 @@
                             !org.wso2.carbon.apimgt.keymgt.client,
                             !org.wso2.carbon.apimgt.keymgt.*,
                             !org.wso2.carbon.apimgt.impl.*,
-                            com.wso2.services.apim.extension.*,
-                            com.wso2.services.apim.extension,
+                            org.wso2.apimgt.keymgt.is4.*,
+                            org.wso2.apimgt.keymgt.is4,
                             org.wso2.services.is4.*,
                             org.wso2.services.is4
                         </Export-Package>

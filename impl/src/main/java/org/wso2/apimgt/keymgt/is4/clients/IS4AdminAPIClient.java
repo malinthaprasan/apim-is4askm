@@ -62,7 +62,7 @@ public class IS4AdminAPIClient {
                 Request originalRequest = chain.request().newBuilder().addHeader(Constants.AUTHORIZATION, accessToken)
                         .build();
                 Response response = chain.proceed(originalRequest);
-                if (!response.isSuccessful() && response.code() == 401) {
+                if (!response.isSuccessful()) {
                     getAccessToken();
                     Request newRequest = originalRequest.newBuilder().removeHeader(Constants.AUTHORIZATION)
                                     .addHeader(Constants.AUTHORIZATION, accessToken).build();
