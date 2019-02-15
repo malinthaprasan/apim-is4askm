@@ -97,4 +97,20 @@ public class APIManagerAdminClient {
     public int getApplicationId(String applicationName, String username) throws APIManagementException {
         return apiMgtDAO.getApplicationId(applicationName, username);
     }
+
+    public List<String> getSubscribedApplicationConsumerKeysOfAPI(String provider, String name, String version)
+            throws APIManagementException {
+        List<String> consumerKeys = new ArrayList<>();
+        List<SubscribedAPI> subscribedAPIS = apiMgtDAO.getSubscriptionsOfAPI(name, version, provider);
+        if (subscribedAPIS != null) {
+            for(SubscribedAPI subscribedAPI : subscribedAPIS) {
+                Application application = subscribedAPI.getApplication();
+                Set<String> keysOfApplication = getConsumerKeysOfApplication(application.getId());
+                if (keysOfApplication != null) {
+                    consumerKeys.addAll(keysOfApplication);
+                }
+            }
+        }
+        return consumerKeys;
+    }
 }

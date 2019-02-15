@@ -65,7 +65,7 @@ ${m2-repo-home}/org/threeten/threetenbp/1.3.5/threetenbp-1.3.5.jar
 
 5. Add the application attributes configuration to the api-manager.xml
 
-```$xml
+```xml
 <ApplicationConfiguration>
     <ApplicationAttributes>
         <Attribute required="false">
@@ -131,6 +131,8 @@ After it is added:
 ...
 </WorkFlowExtensions>
 ```
+
+Additionally you can use the provided [Registry client](/tools/registry-ws-client) for adding this.
 
 ## Troubleshooting
 

@@ -7,6 +7,7 @@ import org.apache.synapse.MessageContext;
 import org.apache.synapse.core.axis2.Axis2MessageContext;
 import org.apache.synapse.rest.AbstractHandler;
 import org.apache.synapse.rest.RESTConstants;
+import org.wso2.apimgt.keymgt.is4.Constants;
 
 import java.util.Map;
 
@@ -28,9 +29,10 @@ public class InjectIS4ResourceHandler extends AbstractHandler {
 
         String authHeader = (String) headers.get(HttpHeaders.AUTHORIZATION);
         if (authHeader != null) {
-            headers.put(HttpHeaders.AUTHORIZATION, authHeader + "###" + apiId);
-        }else{
-            log.warn("Unable to find the authorization header for request : '" + messageContext.getMessageID() + "'");
+            headers.put(HttpHeaders.AUTHORIZATION, authHeader + Constants.AUTHORIZATION_HEADER_SPLITTER + apiId);
+        } else {
+            //OPTIONS call (CORS) might not contain the "Authorization" header.
+            log.debug("Unable to find the authorization header for request : '" + messageContext.getMessageID() + "'");
         }
 
         log.debug("Proceeding Auth header: " + headers.get(HttpHeaders.AUTHORIZATION));
