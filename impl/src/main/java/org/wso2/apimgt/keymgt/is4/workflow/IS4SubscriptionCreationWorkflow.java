@@ -31,7 +31,6 @@ public class IS4SubscriptionCreationWorkflow extends SubscriptionCreationSimpleW
     public IS4SubscriptionCreationWorkflow() {
         APIManagerAdminClient = new APIManagerAdminClient();
         is4AdminAPIClient = new IS4AdminAPIClient();
-
     }
 
     @Override

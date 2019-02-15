@@ -18,7 +18,9 @@ import org.wso2.services.is4.model.*;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 public class IS4AdminAPIClient {
@@ -258,12 +260,12 @@ public class IS4AdminAPIClient {
      * @param scopes the list of scopes that needs to be associated with the given protected resource
      * @throws ApiException if an error occurs or if the given protected resource is not in IS4
      */
-    public void updateProtectedResourceWithScopes(String key, String[] scopes) throws ApiException {
+    public Map<String, List<String>> updateProtectedResourceWithScopes(String key, String[] scopes) throws ApiException {
         ProtectedResourceDto protectedResourceDto = getProtectedResource(key);
-        updateProtectedResourceWithScopes(protectedResourceDto, scopes);
+        return updateProtectedResourceWithScopes(protectedResourceDto, scopes);
     }
 
-    private void updateProtectedResourceWithScopes(ProtectedResourceDto protectedResourceDto, String[] scopes)
+    private Map<String, List<String>> updateProtectedResourceWithScopes(ProtectedResourceDto protectedResourceDto, String[] scopes)
             throws ApiException {
         String logPrefix =
                 "[Updating protected resource : '" + (protectedResourceDto != null ? protectedResourceDto.getName() :
@@ -275,6 +277,11 @@ public class IS4AdminAPIClient {
             scopes = new String[0];
         }
 
+        Map<String, List<String>> changes = new HashMap<>();
+
+        List<String> addedScopes = new ArrayList<>();
+        List<String> removedScopes = new ArrayList<>();
+        
         log.debug(logPrefix + " Retrieving..");
         if (protectedResourceDto != null) {
             log.debug(logPrefix + " Found. Checking for new scopes.");
@@ -289,7 +296,8 @@ public class IS4AdminAPIClient {
                     scopeDto.setName(scope);
                     scopeDto.setDisplayName(scope);
                     resourcesApi.protectedResourcesByIdScopesPost(protectedResourceDto.getId(), scopeDto);
-
+                    
+                    addedScopes.add(scope);
                     if (log.isDebugEnabled()) {
                         log.debug(logPrefix + " Scope : '" + scope + "' added.");
                     }
@@ -312,6 +320,7 @@ public class IS4AdminAPIClient {
                         resourcesApi.protectedResourcesByIdScopesByScopeIdDelete(protectedResourceDto.getId(),
                                 scopeDto.getId());
 
+                        removedScopes.add(scopeDto.getName());
                         if (log.isDebugEnabled()) {
                             log.debug(logPrefix + " Scope : '" + scopeDto.getName() + "' deleted.");
                         }
@@ -323,6 +332,11 @@ public class IS4AdminAPIClient {
                 }
             }
             log.debug(logPrefix + " Checking for deleted completed.");
+            
+            changes.put(Constants.ADDED_SCOPES, addedScopes);
+            changes.put(Constants.REMOVED_SCOPES, removedScopes);
+            
+            return changes;
         } else {
             throw new ApiException(
                     "Protected resource not found.");
@@ -344,6 +358,30 @@ public class IS4AdminAPIClient {
         }
     }
 
+    public void updateScopesOfRetrievedClient(ClientDto clientDto, List<String> scopesToAdd, List<String> scopesToRemove)
+            throws ApiException {
+        List<String> scopes = clientDto.getAllowedScopes();
+        boolean changeDone = false;
+
+        if (scopesToAdd != null && scopesToAdd.size() > 0) {
+            scopes.addAll(scopesToAdd);
+            changeDone = true;
+        }
+
+        if (scopesToRemove != null && scopesToRemove.size() > 0) {
+            scopes.removeAll(scopesToRemove);
+            changeDone = true;
+        }
+
+        if (changeDone) {
+            clientDto.setAllowedScopes(scopes);
+            clientsApi.clientsByIdPut(clientDto.getId(), clientDto);
+        } else {
+            log.debug("Scopes not updated in client " + clientDto.getClientName()
+                    + "as no changes requested to remove or add scopes.");
+        }
+        return;
+    }
 
     /**
      * This method returns the client information from the IS4 server, for the given name.
