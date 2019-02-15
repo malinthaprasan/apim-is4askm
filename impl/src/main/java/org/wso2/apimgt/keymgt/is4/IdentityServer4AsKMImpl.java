@@ -267,9 +267,15 @@ public class IdentityServer4AsKMImpl extends AbstractKeyManager {
         log.info("WARNING : request to deleteMappedApplication > " + applicationKey);
     }
 
-    public void deleteRegisteredResourceByAPIId(String APIId) throws APIManagementException {
-
-        log.info("WARNING : request to deleteRegisteredResourceByAPIId > " + APIId);
+    public void deleteRegisteredResourceByAPIId(String apiId) throws APIManagementException {
+        String logPrefix = "[Deleting protected resource with id :" + apiId + "] ";
+        log.debug(logPrefix + "Started");
+        try {
+            is4AdminAPIClient.deleteProtectedResourceWithKey(apiId);
+        } catch (ApiException e) {
+            handleException(logPrefix + ERR_MESSAGE, e);
+        }
+        log.debug(logPrefix + "Completed");
     }
 
     public AccessTokenInfo getAccessTokenByConsumerKey(String consumerKey) throws APIManagementException {
