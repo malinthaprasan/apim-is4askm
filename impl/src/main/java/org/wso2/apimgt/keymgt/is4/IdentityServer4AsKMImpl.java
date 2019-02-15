@@ -20,10 +20,17 @@ import org.wso2.services.is4.ApiException;
 import org.wso2.services.is4.model.ClientDto;
 import org.wso2.services.is4.model.ProtectedResourceDto;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import static org.wso2.apimgt.keymgt.is4.Constants.IS4_DEFAULT_SCOPE_DEFAULT;
 
 public class IdentityServer4AsKMImpl extends AbstractKeyManager {
-    public static final String DEFAULT_SCOPE = "NHGateway";
 
     private static Log log = LogFactory.getLog(IdentityServer4AsKMImpl.class);
     private static final String ERR_MESSAGE = " Error occurred during operation.";
@@ -91,7 +98,7 @@ public class IdentityServer4AsKMImpl extends AbstractKeyManager {
                 //change APIM default scope to is4 default scope
                 for (int i = 0; i < tokenScopeArr.length; i++) {
                     if (Constants.APIM_TOKEN_SCOPE_DEFAULT.equals(tokenScopeArr[i])) {
-                        tokenScopeArr[i] = Constants.IS4_TOKEN_SCOPE_DEFAULT;
+                        tokenScopeArr[i] = IS4_DEFAULT_SCOPE_DEFAULT;
                     }
                 }
                 tokenRequest.setScope((String[]) tokenScopeObj);
@@ -99,7 +106,7 @@ public class IdentityServer4AsKMImpl extends AbstractKeyManager {
                 String tokenScope = (String) tokenScopeObj;
                 //change APIM default scope to is4 default scope
                 if (Constants.APIM_TOKEN_SCOPE_DEFAULT.equals(tokenScope)) {
-                    tokenScope = Constants.IS4_TOKEN_SCOPE_DEFAULT;
+                    tokenScope = IS4_DEFAULT_SCOPE_DEFAULT;
                 }
                 String[] tokenScopes = new String[1];
                 tokenScopes[0] = tokenScope;
@@ -107,7 +114,7 @@ public class IdentityServer4AsKMImpl extends AbstractKeyManager {
             }
         } else {
             String[] tokenScopes = new String[1];
-            tokenScopes[0] = Constants.IS4_TOKEN_SCOPE_DEFAULT;
+            tokenScopes[0] = IS4_DEFAULT_SCOPE_DEFAULT;
             tokenRequest.setScope(tokenScopes);
         }
 
@@ -118,17 +125,6 @@ public class IdentityServer4AsKMImpl extends AbstractKeyManager {
 
         return tokenRequest;
     }
-
-    protected void handleException(String msg) throws APIManagementException {
-        log.error(msg);
-        throw new APIManagementException(msg);
-    }
-
-    protected void handleException(String msg, Throwable e) throws APIManagementException {
-        log.error(msg, e);
-        throw new APIManagementException(msg, e);
-    }
-
 
     public OAuthApplicationInfo buildFromJSON(String json) throws APIManagementException {
         return null;
@@ -151,11 +147,13 @@ public class IdentityServer4AsKMImpl extends AbstractKeyManager {
             if (scopes.isEmpty()) {
                 // This is an error condition in IS4 where it cannot issue an token for an empty scope.
                 // Check whether the default scope exists in IS4
-                List<String> existingScopes = is4AdminAPIClient.getScopeList(Collections.singletonList(DEFAULT_SCOPE));
-                if (existingScopes.isEmpty() || !existingScopes.contains(DEFAULT_SCOPE)) {
-                    is4AdminAPIClient.addProtectedResource(DEFAULT_SCOPE, DEFAULT_SCOPE, new String[]{DEFAULT_SCOPE});
+                List<String> existingScopes = is4AdminAPIClient
+                        .getScopeList(Collections.singletonList(IS4_DEFAULT_SCOPE_DEFAULT));
+                if (existingScopes.isEmpty() || !existingScopes.contains(IS4_DEFAULT_SCOPE_DEFAULT)) {
+                    is4AdminAPIClient.addProtectedResource(IS4_DEFAULT_SCOPE_DEFAULT, IS4_DEFAULT_SCOPE_DEFAULT,
+                            new String[] { IS4_DEFAULT_SCOPE_DEFAULT });
                 }
-                scopes.add(DEFAULT_SCOPE);
+                scopes.add(IS4_DEFAULT_SCOPE_DEFAULT);
             }
 
             // Create API request
@@ -264,7 +262,7 @@ public class IdentityServer4AsKMImpl extends AbstractKeyManager {
     }
 
     public void deleteMappedApplication(String applicationKey) throws APIManagementException {
-        log.info("WARNING : request to deleteMappedApplication > " + applicationKey);
+        log.debug("Request to deleteMappedApplication > " + applicationKey + ". But this is not implemented.");
     }
 
     public void deleteRegisteredResourceByAPIId(String apiId) throws APIManagementException {
@@ -279,7 +277,7 @@ public class IdentityServer4AsKMImpl extends AbstractKeyManager {
     }
 
     public AccessTokenInfo getAccessTokenByConsumerKey(String consumerKey) throws APIManagementException {
-        log.info("WARNING : request to getAccessTokenByConsumerKey > " + consumerKey);
+        log.debug("Retrieving token for consumer key : " + consumerKey);
         int applicationId = APIManagerAdminClient.getApplicationIdFromConsumerKey(consumerKey);
         Map<String, String> applicationAttributes = APIManagerAdminClient.getApplicationAttributes(applicationId);
         String applicationTokenType = APIManagerAdminClient.getApplicationTokenType(consumerKey);
@@ -293,12 +291,11 @@ public class IdentityServer4AsKMImpl extends AbstractKeyManager {
     }
 
     public Set<String> getActiveTokensByConsumerKey(String consumerKey) throws APIManagementException {
-        log.info("WARNING : request to getActiveTokensByConsumerKey > " + consumerKey);
+        log.debug("Request to getActiveTokensByConsumerKey > " + consumerKey + ". But this is not implemented.");
         return null;
     }
 
     public KeyManagerConfiguration getKeyManagerConfiguration() throws APIManagementException {
-        log.debug("request to getKeyManagerConfiguration");
         return keyManagerConfiguration;
     }
 
@@ -335,7 +332,8 @@ public class IdentityServer4AsKMImpl extends AbstractKeyManager {
     }
 
     public String getNewApplicationConsumerSecret(AccessTokenRequest accessTokenRequest) throws APIManagementException {
-        log.info("WARNING : request to getNewApplicationConsumerSecret > " + accessTokenRequest);
+        log.debug("Request to getNewApplicationConsumerSecret > " + accessTokenRequest
+                + ". But this is not implemented.");
         return null;
     }
 
@@ -376,7 +374,41 @@ public class IdentityServer4AsKMImpl extends AbstractKeyManager {
         String logPrefix = "[Updating protected resource for api with scopes:" + api.getId().toString() + "] ";
         log.debug(logPrefix + "Started");
         try {
-            is4AdminAPIClient.updateProtectedResourceWithScopes(api.getId().toString(), getAPIScopes(api));
+            String[] scopes = getAPIScopes(api);
+            Map<String, List<String>> changes = is4AdminAPIClient
+                    .updateProtectedResourceWithScopes(api.getId().toString(), scopes);
+
+            List<String> scopesToAdd = changes.get(Constants.ADDED_SCOPES);
+            List<String> scopesToRemove = changes.get(Constants.REMOVED_SCOPES);
+
+            if (log.isDebugEnabled()) {
+                if (scopesToAdd != null && scopesToAdd.size() > 0) {
+                    String scopesToAddString = String.join(",", scopesToAdd);
+                    log.debug("Scopes to add: " + scopesToAddString);
+                }
+                if (scopesToRemove != null && scopesToRemove.size() > 0) {
+                    String scopesToRemoveString = String.join(",", scopesToRemove);
+                    log.debug("Scopes to remove: " + scopesToRemoveString);
+                }
+            }
+            APIIdentifier apiId = api.getId();
+            List<String> clientsToUpdate = APIManagerAdminClient
+                    .getSubscribedApplicationConsumerKeysOfAPI(apiId.getProviderName(), apiId.getApiName(),
+                            apiId.getVersion());
+
+            if (clientsToUpdate != null && clientsToUpdate.size() > 0) {
+                for (String consumerKey : clientsToUpdate) {
+                    log.debug("Updating client " + consumerKey + " with scopes");
+                    ClientDto dto = is4AdminAPIClient.getClientByConsumerKey(consumerKey);
+                    if (dto != null) {
+                        is4AdminAPIClient.updateScopesOfRetrievedClient(dto, scopesToAdd, scopesToRemove);
+                    } else {
+                        log.warn("A stale reference for consumer key " + consumerKey + " which does not exist in "
+                                + "Identity Server");
+                    }
+                    log.debug("Updated client " + consumerKey + " with scopes");
+                }
+            }
         } catch (ApiException e) {
             handleException(logPrefix + "Error while updating resource " + api.getId().toString(), e);
         }
@@ -385,14 +417,14 @@ public class IdentityServer4AsKMImpl extends AbstractKeyManager {
     }
 
     public Map<String, Set<Scope>> getScopesForAPIS(String apis) throws APIManagementException {
-        log.warn("WARNING : request to getScopesForAPIS > " + apis);
+        log.debug("Request to getScopesForAPIS > " + apis + ". But this is not implemented.");
         return null;
     }
 
     public AccessTokenInfo getTokenMetaData(String authHeader) throws APIManagementException {
         AccessTokenInfo tokenInfo = new AccessTokenInfo();
 
-        String[] headerParts = authHeader.split("###");
+        String[] headerParts = authHeader.split(Constants.AUTHORIZATION_HEADER_SPLITTER);
 
         if (headerParts.length < 1) {
             handleException("Invalid authHeader without accessToken and API name");
@@ -471,5 +503,15 @@ public class IdentityServer4AsKMImpl extends AbstractKeyManager {
             grantTypes.add("client_credentials");
         }
         clientDto.setAllowedGrantTypes(grantTypes);
+    }
+
+    private void handleException(String msg) throws APIManagementException {
+        log.error(msg);
+        throw new APIManagementException(msg);
+    }
+
+    private void handleException(String msg, Throwable e) throws APIManagementException {
+        log.error(msg, e);
+        throw new APIManagementException(msg, e);
     }
 }
