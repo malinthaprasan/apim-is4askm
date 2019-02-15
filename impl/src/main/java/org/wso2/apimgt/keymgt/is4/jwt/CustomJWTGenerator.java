@@ -1,10 +1,9 @@
 package org.wso2.apimgt.keymgt.is4.jwt;
 
-import org.wso2.apimgt.keymgt.is4.internal.ServiceReferenceHolder;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.wso2.apimgt.keymgt.is4.internal.ServiceReferenceHolder;
 import org.wso2.carbon.apimgt.api.APIManagementException;
-import org.wso2.carbon.apimgt.impl.APIConstants;
 import org.wso2.carbon.apimgt.impl.token.ClaimsRetriever;
 import org.wso2.carbon.apimgt.impl.utils.APIUtil;
 import org.wso2.carbon.apimgt.keymgt.service.TokenValidationContext;
@@ -13,13 +12,10 @@ import org.wso2.carbon.user.api.UserStoreException;
 import org.wso2.carbon.user.api.UserStoreManager;
 import org.wso2.carbon.utils.multitenancy.MultitenantUtils;
 
-import java.util.*;
+import java.util.Map;
 
 public class CustomJWTGenerator extends JWTGenerator {
     private static Log log = LogFactory.getLog(CustomJWTGenerator.class);
-    private ClaimsRetriever claimsRetriever;
-
-    private String userAttributeSeparator = APIConstants.MULTI_ATTRIBUTE_SEPARATOR_DEFAULT;
 
     @Override
     public Map<String, String> populateCustomClaims(TokenValidationContext validationContext)
@@ -61,5 +57,4 @@ public class CustomJWTGenerator extends JWTGenerator {
         }
         return null;
     }
-
 }

@@ -16,10 +16,11 @@ public class InjectIS4ResourceHandler extends AbstractHandler {
     @Override
     public boolean handleRequest(MessageContext messageContext) {
         String apiName = (String) messageContext.getProperty(RESTConstants.SYNAPSE_REST_API);
-        log.debug("API Name: " + apiName);
-        String apiId = apiName.replace("--", "-").replace(":v", "-");
+        log.debug("API Name: '" + apiName + "'");
 
-        log.debug("Modified API Name: " + apiId);
+        String apiId = constructAPIId(apiName);
+
+        log.debug("Updated API Name: '" + apiId + "'");
 
         Map headers = (Map) ((Axis2MessageContext) messageContext).getAxis2MessageContext().
                 getProperty(org.apache.axis2.context.MessageContext.TRANSPORT_HEADERS);
@@ -28,6 +29,8 @@ public class InjectIS4ResourceHandler extends AbstractHandler {
         String authHeader = (String) headers.get(HttpHeaders.AUTHORIZATION);
         if (authHeader != null) {
             headers.put(HttpHeaders.AUTHORIZATION, authHeader + "###" + apiId);
+        }else{
+            log.warn("Unable to find the authorization header for request : '" + messageContext.getMessageID() + "'");
         }
 
         log.debug("Proceeding Auth header: " + headers.get(HttpHeaders.AUTHORIZATION));
@@ -37,5 +40,9 @@ public class InjectIS4ResourceHandler extends AbstractHandler {
     @Override
     public boolean handleResponse(MessageContext messageContext) {
         return true;
+    }
+
+    private String constructAPIId(String apiName) {
+        return apiName.replace("--", "-").replace(":v", "-");
     }
 }

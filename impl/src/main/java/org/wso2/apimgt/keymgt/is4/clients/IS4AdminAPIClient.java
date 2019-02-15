@@ -3,25 +3,17 @@ package org.wso2.apimgt.keymgt.is4.clients;
 import com.squareup.okhttp.Interceptor;
 import com.squareup.okhttp.Request;
 import com.squareup.okhttp.Response;
-import org.wso2.apimgt.keymgt.is4.Constants;
-import org.wso2.apimgt.keymgt.is4.exception.TokenAPIException;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.json.simple.JSONObject;
+import org.wso2.apimgt.keymgt.is4.Constants;
+import org.wso2.apimgt.keymgt.is4.exception.TokenAPIException;
 import org.wso2.services.is4.ApiClient;
 import org.wso2.services.is4.ApiException;
 import org.wso2.services.is4.api.ClientsApi;
 import org.wso2.services.is4.api.ProtectedResourcesApi;
-import org.wso2.services.is4.model.ClientDto;
-import org.wso2.services.is4.model.ClientDtoRet;
-import org.wso2.services.is4.model.CreateClientDto;
-import org.wso2.services.is4.model.CreateProtectedResourceDto;
-import org.wso2.services.is4.model.CreateSecretDto;
-import org.wso2.services.is4.model.ProtectedResourceDto;
-import org.wso2.services.is4.model.ProtectedResourceList;
-import org.wso2.services.is4.model.ScopeDto;
-import org.wso2.services.is4.model.SecretDto;
+import org.wso2.services.is4.model.*;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -65,7 +57,7 @@ public class IS4AdminAPIClient {
                 if (!response.isSuccessful()) {
                     getAccessToken();
                     Request newRequest = originalRequest.newBuilder().removeHeader(Constants.AUTHORIZATION)
-                                    .addHeader(Constants.AUTHORIZATION, accessToken).build();
+                            .addHeader(Constants.AUTHORIZATION, accessToken).build();
                     response = chain.proceed(newRequest);
                 }
                 return response;
@@ -123,8 +115,8 @@ public class IS4AdminAPIClient {
      * Client name will be in {name}_{consumer-key} format
      *
      * @param client A {@link ClientDto} with contains the information of the client
-     * @return
-     * @throws ApiException
+     * @return {@link ClientDto} with the response of the application creation
+     * @throws ApiException if error occurs
      */
     public ClientDto addClient(CreateClientDto client) throws ApiException {
         if (client.getClientId() == null) {
@@ -150,9 +142,10 @@ public class IS4AdminAPIClient {
             log.error(msg);
             throw new ApiException(msg);
         }
-        List<SecretDto> secretDtosGet = retrievedClient.getClientSecrets();
-        for (int i = 0; i < Math.min(secretDtosGet.size(), secretDtosCreate.size()); i++) {
-            secretDtosGet.get(i).setValue(secretDtosCreate.get(i).getValue());
+
+        List<SecretDto> retrievedClientSecrets = retrievedClient.getClientSecrets();
+        for (int i = 0; i < Math.min(retrievedClientSecrets.size(), secretDtosCreate.size()); i++) {
+            retrievedClientSecrets.get(i).setValue(secretDtosCreate.get(i).getValue());
         }
 
         return retrievedClient;
@@ -179,18 +172,6 @@ public class IS4AdminAPIClient {
         return getClientByName(consumerKey);
     }
 
-    public ClientDto updateRetrievedClientWithScopes(ClientDto clientDto, String[] scopes) throws ApiException {
-        clientDto.setAllowedScopes(Arrays.asList(scopes));
-        clientsApi.clientsByIdPut(clientDto.getId(), clientDto);
-        return clientDto;
-    }
-
-    public ClientDto updateRetrievedClientWithGrantTypes(ClientDto clientDto, String[] grants) throws ApiException {
-        clientDto.setAllowedGrantTypes(Arrays.asList(grants));
-        clientsApi.clientsByIdPut(clientDto.getId(), clientDto);
-        return clientDto;
-    }
-
     /**
      * This method returns the protected resources information from the IS4 server, for the given key.
      * Current implementation uses the APIID(provider_name_version) as the protected resource name(key).
@@ -211,11 +192,6 @@ public class IS4AdminAPIClient {
                     return protectedResourceDto;
                 }
             }
-            // TODO: remove old code.
-            /*if (resourceList.size() > 1) {
-                throw new ApiException("Resources with name " + key + " found more than once.");
-            }
-            return resourceList.get(0);*/
         }
         return null;
     }
@@ -287,9 +263,11 @@ public class IS4AdminAPIClient {
         updateProtectedResourceWithScopes(protectedResourceDto, scopes);
     }
 
-    public void updateProtectedResourceWithScopes(ProtectedResourceDto protectedResourceDto, String[] scopes)
+    private void updateProtectedResourceWithScopes(ProtectedResourceDto protectedResourceDto, String[] scopes)
             throws ApiException {
-        String logPrefix = "[Updating protected resource : '" + protectedResourceDto.getName() + "' with scopes] ";
+        String logPrefix =
+                "[Updating protected resource : '" + (protectedResourceDto != null ? protectedResourceDto.getName() :
+                        "") + "' with scopes] ";
 
         //if scopes are null, all the scopes of the protected resource except the one with resource name should be 
         //  deleted. Hence, creating an empty scope array
@@ -299,46 +277,55 @@ public class IS4AdminAPIClient {
 
         log.debug(logPrefix + " Retrieving..");
         if (protectedResourceDto != null) {
-            log.debug(logPrefix + " Found..");
-            log.debug(logPrefix + " Checking for new scopes.");
+            log.debug(logPrefix + " Found. Checking for new scopes.");
 
             for (String scope : scopes) {
                 if (!containsScope(protectedResourceDto.getScopes(), scope)) {
-                    log.debug(logPrefix + " Scope : '" + scope + "' is not added. Hence adding..");
+                    if (log.isDebugEnabled()) {
+                        log.debug(logPrefix + " Scope : '" + scope + "' is not added. Hence adding..");
+                    }
 
                     ScopeDto scopeDto = new ScopeDto();
                     scopeDto.setName(scope);
                     scopeDto.setDisplayName(scope);
                     resourcesApi.protectedResourcesByIdScopesPost(protectedResourceDto.getId(), scopeDto);
 
-                    log.debug(logPrefix + " Scope : '" + scope + "' added.");
+                    if (log.isDebugEnabled()) {
+                        log.debug(logPrefix + " Scope : '" + scope + "' added.");
+                    }
                 } else {
-                    log.debug(logPrefix + " Scope : '" + scope + "' is already there.");
+                    if (log.isDebugEnabled()) {
+                        log.debug(logPrefix + " Scope : '" + scope + "' is already there.");
+                    }
                 }
             }
-            log.debug(logPrefix + " Checking for new scopes completed.");
-            log.debug(logPrefix + " Checking for deleted scopes.");
+            log.debug(logPrefix + " Checking for new scopes completed. Checking for deleted scopes.");
             for (ScopeDto scopeDto : protectedResourceDto.getScopes()) {
                 //Need to skip deleting the scope with protected resource name
                 if (!protectedResourceDto.getName().equals(scopeDto.getName())) {
                     if (!ArrayUtils.contains(scopes, scopeDto.getName())) {
-                        log.debug(
-                                logPrefix + " Scope : '" + scopeDto.getName() + "' is not required. Hence deleting..");
+                        if (log.isDebugEnabled()) {
+                            log.debug(logPrefix + " Scope : '" + scopeDto.getName() + "' is not required. Hence deleting.");
+                        }
 
                         // Removing the scope since it was not found.
                         resourcesApi.protectedResourcesByIdScopesByScopeIdDelete(protectedResourceDto.getId(),
                                 scopeDto.getId());
 
-                        log.debug(logPrefix + " Scope : '" + scopeDto.getName() + "' deleted.");
+                        if (log.isDebugEnabled()) {
+                            log.debug(logPrefix + " Scope : '" + scopeDto.getName() + "' deleted.");
+                        }
                     } else {
-                        log.debug(logPrefix + " Scope : '" + scopeDto.getName() + "' is already present.");
+                        if (log.isDebugEnabled()) {
+                            log.debug(logPrefix + " Scope : '" + scopeDto.getName() + "' is already present.");
+                        }
                     }
                 }
             }
             log.debug(logPrefix + " Checking for deleted completed.");
         } else {
             throw new ApiException(
-                    "Protected resource with name : '" + protectedResourceDto.getName() + "' not found.");
+                    "Protected resource not found.");
         }
     }
 
@@ -367,21 +354,15 @@ public class IS4AdminAPIClient {
      * @throws ApiException if any error happens.
      */
 
-    protected ClientDto getClientByName(String name) throws ApiException {
-        ClientDtoRet clientDtos = clientsApi.clientsGet(name);
+    private ClientDto getClientByName(String name) throws ApiException {
+        ClientDtoRet clientDtoRet = clientsApi.clientsGet(name);
 
-        if (clientDtos != null && clientDtos.size() > 0) {
-            for (ClientDto clientDto : clientDtos) {
+        if (clientDtoRet != null && clientDtoRet.size() > 0) {
+            for (ClientDto clientDto : clientDtoRet) {
                 if (clientDto.getClientName().endsWith(name)) {
                     return clientDto;
                 }
             }
-            // TODO: remove old code.
-            /*if (clientDtos.size() > 1) {
-                throw new ApiException("Client with name " + name + " found more than once.");
-            }
-            return clientDtos.get(0);
-            */
         }
         return null;
     }

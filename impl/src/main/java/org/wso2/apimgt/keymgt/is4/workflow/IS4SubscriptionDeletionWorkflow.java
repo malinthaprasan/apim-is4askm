@@ -103,7 +103,6 @@ public class IS4SubscriptionDeletionWorkflow extends SubscriptionDeletionSimpleW
 
                 // Remove the scopes related to the unsubscribed API.
                 uniqueScopes.removeAll(protectedResourceScopesList);
-
                 clientDto.setAllowedScopes(new ArrayList<>(uniqueScopes));
 
                 try {

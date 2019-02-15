@@ -51,7 +51,6 @@ public class IS4SubscriptionCreationWorkflow extends SubscriptionCreationSimpleW
             throw new WorkflowException(msg, e);
         }
 
-
         List<String> protectedResourceScopesList = new ArrayList<>();
         if (protectedResourceDto == null) {
             // This means that the protected resource is missing in IS4.
