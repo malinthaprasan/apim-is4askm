@@ -26,6 +26,12 @@
                 <version>1.6.0</version>
                 <configuration>
                     <mainClass>org.wso2.apimgt.keymgt.is4.registry.client.SampleWSRegistryClient</mainClass>
+                    <systemProperties>
+                        <systemProperty>
+                            <key>trustStore</key>
+                            <value>${project.basedir}/src/main/resources/client-truststore.jks</value>
+                        </systemProperty>
+                    </systemProperties>
                 </configuration>
             </plugin>
         </plugins>
