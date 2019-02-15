@@ -25,8 +25,8 @@ public class ServiceReferenceHolder {
     private static final ServiceReferenceHolder instance = new ServiceReferenceHolder();
 
     private APIManagerConfigurationService amConfigurationService;
-    private static RegistryService registryService;
-    private static RealmService realmService;
+    private RegistryService registryService;
+    private RealmService realmService;
 
     private ServiceReferenceHolder() {
     }

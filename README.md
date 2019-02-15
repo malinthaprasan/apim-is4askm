@@ -63,7 +63,32 @@ ${m2-repo-home}/org/threeten/threetenbp/1.3.5/threetenbp-1.3.5.jar
 	<KeyValidationHandlerClassName>org.wso2.apimgt.keymgt.is4.token.IS4KeyValidationHandler</KeyValidationHandlerClassName>
 ```
 
-5. Add the following handler at the beginning of the synapse handlers of the API in velocity.xml.
+5. Add the application attributes configuration to the api-manager.xml
+
+```$xml
+<ApplicationConfiguration>
+    <ApplicationAttributes>
+        <Attribute required="false">
+            <Name>Production Consumer Secret</Name>
+            <Description>Sample description of the attribute</Description>
+        </Attribute>
+        <Attribute required="false">
+            <Name>Production Access Token</Name>
+            <Description>Sample description of the attribute</Description>
+         </Attribute>
+         <Attribute required="false">
+            <Name>Sandbox Consumer Secret</Name>
+            <Description>Sample description of the attribute</Description>
+        </Attribute>
+        <Attribute required="false">
+            <Name>Sandbox Access Token</Name>
+            <Description>Sample description of the attribute</Description>
+        </Attribute>
+    </ApplicationAttributes>
+</ApplicationConfiguration>
+```
+
+6. Add the following handler at the beginning of the synapse handlers of the API in velocity.xml.
 (<AM_HOME>/repository/resources/api_templates/velocity_template.xml). It needs to be added after `<handlers xmlns="http://ws.apache.org/ns/synapse">`
 and before `#foreach($handler in $handlers)`.
 
@@ -85,7 +110,7 @@ After it is added:
 ...
 ```
 
-6. Configure the workflow extensions in workflow-extensions.xml from API Manager carbon console.
+7. Configure the workflow extensions in workflow-extensions.xml from API Manager carbon console.
 
 ![alt text](docs/images/workflow-extension.jpg)
 

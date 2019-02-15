@@ -63,7 +63,7 @@ public class IS4IntrospectionAPIClient {
     private String constructBasicHeader(String resourceId, String resourceSecret) {
         String basicHeader = resourceId + ":" + resourceSecret;
         byte[] encoded = Base64.getEncoder().encode(basicHeader.getBytes(StandardCharsets.UTF_8));
-        basicHeader = new String(encoded);
+        basicHeader = new String(encoded, StandardCharsets.UTF_8);
         return basicHeader;
     }
 }

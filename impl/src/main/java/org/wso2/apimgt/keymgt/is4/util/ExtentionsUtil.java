@@ -53,7 +53,9 @@ public class ExtentionsUtil {
         StringBuilder allowedGrantTypesStringBuilder = new StringBuilder();
 
         for (String allowedGrantType : allowedGrantTypes) {
-            allowedGrantTypesStringBuilder.append(allowedGrantType).append(",");
+            // Note that there is an difference between what is passed to the createApplicationMethod(, separated
+            // list) and what is expected in the retrieve( ' ' - space separated list)
+            allowedGrantTypesStringBuilder.append(allowedGrantType).append(" ");
         }
         allowedGrantTypesStringBuilder.deleteCharAt(allowedGrantTypesStringBuilder.length() - 1);
 
