@@ -29,7 +29,6 @@ public class ServiceReferenceHolder {
     private static RealmService realmService;
 
     private ServiceReferenceHolder() {
-
     }
 
     public static ServiceReferenceHolder getInstance() {

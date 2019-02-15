@@ -23,6 +23,7 @@ public class ExtentionsUtil {
         if (dto == null) {
             return null;
         }
+
         String logPrefix = "[Getting OAuth App from IS4 Client" + dto.getClientName() + "] ";
 
         oAuthAppInfo.setClientId(dto.getClientId());
@@ -31,7 +32,7 @@ public class ExtentionsUtil {
 
             if (dto.getClientSecrets().size() > 1) {
                 log.warn(logPrefix + "Created OAuth Client in IS4 is having multiple client secrets. "
-                        + "APIM will take the first secret only..");
+                        + "APIM will take the first secret only.");
             }
         } else {
             log.warn(logPrefix + "Created OAuth Client in IS4 is having no client secrets");
@@ -48,13 +49,19 @@ public class ExtentionsUtil {
                     OAUTH_REDIRECT_URIS, dto.getRedirectUris().get(0));
         }
 
-        //todo add properly with response grants
-        oAuthAppInfo.addParameter(ApplicationConstants.OAUTH_CLIENT_GRANT, "client_credentials");
+        List<String> allowedGrantTypes = dto.getAllowedGrantTypes();
+        StringBuilder allowedGrantTypesStringBuilder = new StringBuilder();
 
+        for (String allowedGrantType : allowedGrantTypes) {
+            allowedGrantTypesStringBuilder.append(allowedGrantType).append(",");
+        }
+        allowedGrantTypesStringBuilder.deleteCharAt(allowedGrantTypesStringBuilder.length() - 1);
+
+        oAuthAppInfo.addParameter(ApplicationConstants.OAUTH_CLIENT_GRANT, allowedGrantTypesStringBuilder.toString());
         return oAuthAppInfo;
     }
 
-    public static ClientDto setSecrets(ClientDto from, ClientDto to) {
+    public static void setSecrets(ClientDto from, ClientDto to) {
         List<SecretDto> targetSecretDtoList = to.getClientSecrets();
         List<SecretDto> sourceSecretDtoList = from.getClientSecrets();
 
@@ -63,12 +70,10 @@ public class ExtentionsUtil {
                 targetSecretDtoList.get(i).setValue(sourceSecretDtoList.get(i).getValue());
             }
         }
-        return to;
     }
 
     public static APIIdentifier getApiId(String apiName, String apiVersion, String apiProvider) {
-        APIIdentifier apiIdentifier = new APIIdentifier(apiProvider, apiName, apiVersion);
-        return apiIdentifier;
+        return new APIIdentifier(apiProvider, apiName, apiVersion);
     }
 
 }

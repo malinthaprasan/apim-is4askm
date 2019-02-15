@@ -16,10 +16,12 @@ public class IS4ApplicationRegistrationWorkflow extends ApplicationRegistrationS
     @Override
     public WorkflowResponse complete(WorkflowDTO workFlowDTO) throws WorkflowException {
         ApplicationRegistrationWorkflowDTO appRegWorkflowDTO = (ApplicationRegistrationWorkflowDTO) workFlowDTO;
-        super.complete(workFlowDTO);
+
         String logPrefix = "[Application Reg. workflow for  " + appRegWorkflowDTO.getApplication().getName() + "] ";
         log.debug(logPrefix + "Started");
-        
+
+        super.complete(workFlowDTO);
+
         log.debug(logPrefix + "Completed");
         return new GeneralWorkflowResponse();
     }

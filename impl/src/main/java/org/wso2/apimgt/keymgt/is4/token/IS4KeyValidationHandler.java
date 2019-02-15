@@ -30,28 +30,28 @@ public class IS4KeyValidationHandler extends DefaultKeyValidationHandler {
     public boolean validateScopes(TokenValidationContext validationContext) throws APIKeyMgtException {
         log.debug("Validating scopes from the IS4KeyValidationHandler");
 
+        String[] scopes = null;
         if (validationContext.isCacheHit()) {
             return true;
         }
 
         APIKeyValidationInfoDTO apiKeyValidationInfoDTO = validationContext.getValidationInfoDTO();
-
         if (apiKeyValidationInfoDTO == null) {
             throw new APIKeyMgtException("Key Validation information not set");
         }
 
-        String[] scopes = null;
         Set<String> scopesSet = apiKeyValidationInfoDTO.getScopes();
-
         if (scopesSet != null && !scopesSet.isEmpty()) {
             scopes = scopesSet.toArray(new String[scopesSet.size()]);
-            if (log.isDebugEnabled() && scopes != null) {
+
+            if (log.isDebugEnabled()) {
                 StringBuilder scopeList = new StringBuilder();
                 for (String scope : scopes) {
                     scopeList.append(scope);
                     scopeList.append(",");
                 }
                 scopeList.deleteCharAt(scopeList.length() - 1);
+
                 log.debug("Scopes allowed for token : " + validationContext.getAccessToken() + " : "
                         + scopeList.toString());
             }
@@ -59,29 +59,17 @@ public class IS4KeyValidationHandler extends DefaultKeyValidationHandler {
 
         AuthenticatedUser user = new AuthenticatedUser();
         user.setUserName(apiKeyValidationInfoDTO.getEndUserName());
-
-        if (user.getUserName() != null && APIConstants.FEDERATED_USER
-                .equalsIgnoreCase(IdentityUtil.extractDomainFromName(user.getUserName()))) {
+        if (user.getUserName() != null && APIConstants.FEDERATED_USER.equalsIgnoreCase(
+                IdentityUtil.extractDomainFromName(user.getUserName()))) {
             user.setFederatedUser(true);
         }
 
         AccessTokenDO accessTokenDO = new AccessTokenDO(apiKeyValidationInfoDTO.getConsumerKey(), user, scopes, null,
                 null, apiKeyValidationInfoDTO.getValidityPeriod(), apiKeyValidationInfoDTO.getValidityPeriod(),
                 apiKeyValidationInfoDTO.getType());
-
         accessTokenDO.setAccessToken(validationContext.getAccessToken());
 
-        String actualVersion = validationContext.getVersion();
-        //Check if the api version has been prefixed with _default_
-        if (actualVersion != null && actualVersion.startsWith(APIConstants.DEFAULT_VERSION_PREFIX)) {
-            //Remove the prefix from the version.
-            actualVersion = actualVersion.split(APIConstants.DEFAULT_VERSION_PREFIX)[1];
-        }
-        String resource = validationContext.getContext() + "/" + actualVersion + validationContext
-                .getMatchingResource()
-                + ":" +
-                validationContext.getHttpVerb();
-
+        String resource = getResourceName(validationContext);
         try {
             if (validateScope(accessTokenDO, resource)) {
                 return true;
@@ -98,7 +86,22 @@ public class IS4KeyValidationHandler extends DefaultKeyValidationHandler {
         return false;
     }
 
+    private String getResourceName(TokenValidationContext validationContext) {
+        String actualVersion = validationContext.getVersion();
+        //Check if the api version has been prefixed with _default_
+        if (actualVersion != null && actualVersion.startsWith(APIConstants.DEFAULT_VERSION_PREFIX)) {
+            //Remove the prefix from the version.
+            actualVersion = actualVersion.split(APIConstants.DEFAULT_VERSION_PREFIX)[1];
+        }
+        return validationContext.getContext() + "/" + actualVersion + validationContext
+                .getMatchingResource()  + ":" + validationContext.getHttpVerb();
+    }
+
     private boolean validateScope(AccessTokenDO accessTokenDO, String resource) throws IdentityOAuth2Exception {
+        String resourceScope = null;
+        int resourceTenantId = -1;
+        boolean cacheHit = false;
+
         if (resource == null) {
             return true;
         }
@@ -108,12 +111,9 @@ public class IS4KeyValidationHandler extends DefaultKeyValidationHandler {
             return true;
         }
 
-        String resourceScope = null;
-        int resourceTenantId = -1;
-        boolean cacheHit = false;
         OAuthCacheKey cacheKey = new OAuthCacheKey(resource);
         CacheEntry result = OAuthCache.getInstance().getValueFromCache(cacheKey);
-        if (result != null && result instanceof ResourceScopeCacheEntry) {
+        if (result instanceof ResourceScopeCacheEntry) {
             resourceScope = ((ResourceScopeCacheEntry) result).getScope();
             resourceTenantId = ((ResourceScopeCacheEntry) result).getTenantId();
             cacheHit = true;
@@ -124,7 +124,7 @@ public class IS4KeyValidationHandler extends DefaultKeyValidationHandler {
                     .findTenantAndScopeOfResource(resource);
             if (scopeMap != null) {
                 resourceScope = scopeMap.getLeft();
-                resourceTenantId = scopeMap.getRight().intValue();
+                resourceTenantId = scopeMap.getRight();
             }
 
             cacheKey = new OAuthCacheKey(resource);
@@ -137,21 +137,17 @@ public class IS4KeyValidationHandler extends DefaultKeyValidationHandler {
             if (log.isDebugEnabled()) {
                 log.debug("Resource '" + resource + "' is not protected with a scope");
             }
-
             return true;
         }
 
-        List<String> scopeList = new ArrayList(Arrays.asList(scopes));
+        ArrayList scopeList = new ArrayList(Arrays.asList(scopes));
         if (!scopeList.contains(resourceScope)) {
             if (log.isDebugEnabled() && IdentityUtil.isTokenLoggable("AccessToken")) {
-                log.debug(
-                        "Access token '" + accessTokenDO.getAccessToken() + "' does not bear the scope '"
+                log.debug("Access token '" + accessTokenDO.getAccessToken() + "' does not bear the scope '"
                                 + resourceScope + "'");
             }
-
             return false;
         }
-        
         return true;
     }
 }

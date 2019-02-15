@@ -59,7 +59,6 @@ public class IS4TokenAPIClient {
         JSONObject jsonObject;
 
         Request request = new Request.Builder().url(tokenAPIUrl).post(formEncoding).build();
-
         try {
             response = client.newCall(request).execute();
             String accessTokenResponse = response.body().string();
